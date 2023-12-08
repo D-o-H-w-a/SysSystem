@@ -29,16 +29,18 @@
         private void InitializeComponent()
         {
             groupBox1 = new GroupBox();
+            status_Txt = new TextBox();
             hostIp_Txt = new TextBox();
             host_Txt = new TextBox();
             disConnect_Btn = new Button();
             connect_Btn = new Button();
             groupBox3 = new GroupBox();
-            status_Txt = new TextBox();
             groupBox2 = new GroupBox();
             button1 = new Button();
             read_Btn = new Button();
+            listView1 = new ListView();
             groupBox1.SuspendLayout();
+            groupBox3.SuspendLayout();
             groupBox2.SuspendLayout();
             SuspendLayout();
             // 
@@ -55,6 +57,14 @@
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             groupBox1.Text = "groupBox1";
+            // 
+            // status_Txt
+            // 
+            status_Txt.Location = new Point(11, 39);
+            status_Txt.Name = "status_Txt";
+            status_Txt.Size = new Size(226, 27);
+            status_Txt.TabIndex = 2;
+            status_Txt.Text = "Status: Not Connected";
             // 
             // hostIp_Txt
             // 
@@ -93,20 +103,13 @@
             // 
             // groupBox3
             // 
+            groupBox3.Controls.Add(listView1);
             groupBox3.Location = new Point(4, 168);
             groupBox3.Name = "groupBox3";
             groupBox3.Size = new Size(1253, 797);
             groupBox3.TabIndex = 1;
             groupBox3.TabStop = false;
             groupBox3.Text = "groupBox3";
-            // 
-            // status_Txt
-            // 
-            status_Txt.Location = new Point(11, 39);
-            status_Txt.Name = "status_Txt";
-            status_Txt.Size = new Size(226, 27);
-            status_Txt.TabIndex = 2;
-            status_Txt.Text = "Status: Not Connected";
             // 
             // groupBox2
             // 
@@ -137,6 +140,14 @@
             read_Btn.Text = "Read";
             read_Btn.UseVisualStyleBackColor = true;
             // 
+            // listView1
+            // 
+            listView1.Location = new Point(6, 26);
+            listView1.Name = "listView1";
+            listView1.Size = new Size(1241, 771);
+            listView1.TabIndex = 0;
+            listView1.UseCompatibleStateImageBehavior = false;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(9F, 20F);
@@ -146,10 +157,11 @@
             Controls.Add(groupBox2);
             Controls.Add(groupBox1);
             Name = "Form1";
-            Text = "Form1";
+            Text = "OPCClinet";
             Load += Form1_Load;
             groupBox1.ResumeLayout(false);
             groupBox1.PerformLayout();
+            groupBox3.ResumeLayout(false);
             groupBox2.ResumeLayout(false);
             ResumeLayout(false);
         }
@@ -166,5 +178,6 @@
         private GroupBox groupBox2;
         private Button button1;
         private Button read_Btn;
+        private ListView listView1;
     }
 }
