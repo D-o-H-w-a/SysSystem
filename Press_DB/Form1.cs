@@ -7,10 +7,9 @@ namespace Press_DB
 {
     public partial class Form1 : Form
     {
-        private OPCServer opcServer; // 클라이언트와 서버간의 통신을 위해서 필요한 것들을 가져올 interface 변수.
-        private OPCGroup opcGround; // 서버에 저장된 OPCGroup을 클라이언트에 담아줄 interface 변수.
-        private Thread opcThread; // 
-        private bool isRunning;
+        private OPCServer opcServer; // OPC 서버 객체
+        private OPCGroup opcGroup; // OPC 그룹 객체
+        private Thread opcThread; // OPC 통신을 처리하는 스레드
 
         public Form1()
         {
@@ -19,7 +18,22 @@ namespace Press_DB
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            // OPC Server 연결
+            opcServer = new OPCServer();
+            // OPC 서버 주소값을 받아 연결
+            opcServer.Connect("OPCServerIP");
 
+            //OPC 그룹 설정
+            opcGroup = opcServer.OPCGroups.Add("OPCGroupName");
+            //OPC 그룹 활성화 - 데이터 읽기/쓰기 가능
+            opcGroup.IsActive = true;
+            // Subscription 활성화 - 데이터 변경 시 클라이언트에 자동 업데이트
+            opcGroup.IsSubscribed = true;
+            // 업데이트 주기
+            opcGroup.UpdateRate = 1000;
+
+            // OPC 아이템 추가 - OPC 아이템 이름으로 추가.
+            OPCItem item = opcGroup.OPCItems.AddItem("ItemName", 1);
         }
     }
 }
