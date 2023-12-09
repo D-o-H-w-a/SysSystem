@@ -34,6 +34,19 @@ namespace Press_DB
 
             // OPC 아이템 추가 - OPC 아이템 이름으로 추가.
             OPCItem item = opcGroup.OPCItems.AddItem("ItemName", 1);
+
+            // 백그라운드 스레드 시작
+            opcThread = new Thread(ReadOPCValue);
+            opcThread.Start();
+        }
+
+        // 백그라운드에서 주기적으로 OPC 통신을 수행하는 메서드
+        private void ReadOPCValue()
+        {
+            while (true)
+            {
+
+            }
         }
     }
 }
