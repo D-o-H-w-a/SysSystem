@@ -29,13 +29,13 @@
         private void InitializeComponent()
         {
             groupBox3 = new GroupBox();
-            listView1 = new ListView();
+            ItemView = new ListView();
             groupBox3.SuspendLayout();
             SuspendLayout();
             // 
             // groupBox3
             // 
-            groupBox3.Controls.Add(listView1);
+            groupBox3.Controls.Add(ItemView);
             groupBox3.Location = new Point(4, 12);
             groupBox3.Name = "groupBox3";
             groupBox3.Size = new Size(1253, 953);
@@ -43,13 +43,13 @@
             groupBox3.TabStop = false;
             groupBox3.Text = "groupBox3";
             // 
-            // listView1
+            // ItemView
             // 
-            listView1.Location = new Point(6, 26);
-            listView1.Name = "listView1";
-            listView1.Size = new Size(1241, 927);
-            listView1.TabIndex = 0;
-            listView1.UseCompatibleStateImageBehavior = false;
+            ItemView.Location = new Point(6, 26);
+            ItemView.Name = "ItemView";
+            ItemView.Size = new Size(1241, 927);
+            ItemView.TabIndex = 0;
+            ItemView.UseCompatibleStateImageBehavior = false;
             // 
             // Form1
             // 
@@ -59,13 +59,12 @@
             Controls.Add(groupBox3);
             Name = "Form1";
             Text = "OPCClinet";
-            Load += Form1_Load;
             groupBox3.ResumeLayout(false);
             ResumeLayout(false);
         }
 
         #endregion
         private GroupBox groupBox3;
-        private ListView listView1;
+        private ListView ItemView;
     }
 }

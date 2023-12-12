@@ -18,3 +18,11 @@ C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net8.0-windows\
 C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net8.0-windows\Press_DB.pdb
 C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net8.0-windows\Press_DB.genruntimeconfig.cache
 C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net8.0-windows\ref\Press_DB.dll
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\bin\Debug\net8.0-windows\System.Data.SqlClient.dll
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\bin\Debug\net8.0-windows\runtimes\win-arm64\native\sni.dll
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\bin\Debug\net8.0-windows\runtimes\win-x64\native\sni.dll
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\bin\Debug\net8.0-windows\runtimes\win-x86\native\sni.dll
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\bin\Debug\net8.0-windows\runtimes\unix\lib\netcoreapp2.1\System.Data.SqlClient.dll
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\bin\Debug\net8.0-windows\runtimes\win\lib\netcoreapp2.1\System.Data.SqlClient.dll
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net8.0-windows\Press_DB.csproj.AssemblyReference.cache
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net8.0-windows\Press_DB.csproj.CopyComplete
