@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Press_DB")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0c78ef4cdb196dab59c6fd241b288ff80dd576b9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+947a0510ab4e9f88cdf99c5dd3c54999bcd3f03f")]
 [assembly: System.Reflection.AssemblyProductAttribute("Press_DB")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Press_DB")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
