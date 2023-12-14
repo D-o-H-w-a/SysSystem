@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Data.SqlClient;
 using OPCAutomation;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Security.Cryptography;
 
 namespace Press_DB
 {
@@ -14,6 +15,9 @@ namespace Press_DB
         private OPCServer opcServer;
         private OPCItems opcItems;
         private List<OPCItem> opcItemList = new List<OPCItem>();
+        private OPCGroups opcGroups;
+        private OPCGroup opcGroup;
+        private OPCItem opcItem;
 
         public Form1()
         {
@@ -31,19 +35,26 @@ namespace Press_DB
             opcServer = new OPCServer();
             opcServer.Connect("OPCServerIP");
 
+            // OPC 그룹 생성
+            opcGroups = opcServer.OPCGroups;
+            opcGroup = opcGroups.Add("YourGroup");
+            opcGroup.IsActive = true;
+            opcGroup.IsSubscribed = true;
+            opcItems = opcGroup.OPCItems;
+
+
             // OPC 아이템 추가 (예시)
-            opcItems = opcServer.OPCItems;
             opcItemList.Add(opcItems.AddItem("PLT_IN_OUT", 1));
             opcItemList.Add(opcItems.AddItem("Job_Line", 1));
-            opcItemList.Add(opcItems.AddItem("Serial_No"), 1);
-            opcItemList.Add(opcItems.AddItem("PLT_Number"), 1);
-            opcItemList.Add(opcItems.AddItem("PLT_TYPE"), 1);
-            opcItemList.Add(opcItems.AddItem("Car_Type"), 1);
-            opcItemList.Add(opcItems.AddItem("Item"), 1);
-            opcItemList.Add(opcItems.AddItem("Spec"), 1);
-            opcItemList.Add(opcItems.AddItem("LINE"), 1);
-            opcItemList.Add(opcItems.AddItem("Parts_count_int_pallet"), 1);
-            opcItemList.Add(opcItems.AddItem("Counts"), 1);
+            opcItemList.Add(opcItems.AddItem("Serial_No", 1));
+            opcItemList.Add(opcItems.AddItem("PLT_Number", 1));
+            opcItemList.Add(opcItems.AddItem("PLT_TYPE", 1));
+            opcItemList.Add(opcItems.AddItem("Car_Type", 1));
+            opcItemList.Add(opcItems.AddItem("Item", 1));
+            opcItemList.Add(opcItems.AddItem("Spec", 1));
+            opcItemList.Add(opcItems.AddItem("LINE", 1));
+            opcItemList.Add(opcItems.AddItem("Parts_count_int_pallet", 1));
+            opcItemList.Add(opcItems.AddItem("Counts", 1));
 
             // 필요한 나머지 OPC 아이템 추가
 
@@ -69,7 +80,7 @@ namespace Press_DB
                     {
                         int stkState = Convert.ToInt32(readerSCState["Stk_state"]);
                         
-                        int value = Convert.ToInt32(opcItemList.Find(item => item.ItemName == "Item"));
+                        int value = Convert.ToInt32(opcItemList.Find(item => item.ItemID == "Item"));
                         // 조건 검사 및 처리
                         // opcItemList 리스트의 원하는 인덱스를 사용하여 OPC 아이템 값에 접근하여 조건 검사
                         if (value < cellType && state == "Empty" && stkState == 0)
@@ -97,17 +108,17 @@ namespace Press_DB
             Dictionary<string, object> itemValues = new Dictionary<string, object>();
 
             // 각 아이템의 값을 딕셔너리에 추가
-            itemValues["PLT_IN_OUT"] = opcItemList.Find(item => item.ItemName == "PLT_IN_OUT")?.Value;
-            itemValues["Job_Line"] = opcItemList.Find(item => item.ItemName == "Job_Line")?.Value;
-            itemValues["Serial_No"] = opcItemList.Find(item => item.ItemName == "Serial_No")?.Value;
-            itemValues["PLT_Number"] = opcItemList.Find(item => item.ItemName == "PLT_Number")?.Value;
-            itemValues["PLT_TYPE"] = opcItemList.Find(item => item.ItemName == "PLT_TYPE")?.Value;
-            itemValues["Car_Type"] = opcItemList.Find(item => item.ItemName == "Car_Type")?.Value;
-            itemValues["Item"] = opcItemList.Find(item => item.ItemName == "Item")?.Value;
-            itemValues["Spec"] = opcItemList.Find(item => item.ItemName == "Spec")?.Value;
-            itemValues["LINE"] = opcItemList.Find(item => item.ItemName == "LINE")?.Value;
-            itemValues["Parts_count_int_pallet"] = opcItemList.Find(item => item.ItemName == "Parts_count_int_pallet")?.Value;
-            itemValues["Counts"] = opcItemList.Find(item => item.ItemName == "Counts")?.Value;
+            itemValues["PLT_IN_OUT"] = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
+            itemValues["Job_Line"] = opcItemList.Find(item => item.ItemID == "Job_Line")?.Value;
+            itemValues["Serial_No"] = opcItemList.Find(item => item.ItemID == "Serial_No")?.Value;
+            itemValues["PLT_Number"] = opcItemList.Find(item => item.ItemID == "PLT_Number")?.Value;
+            itemValues["PLT_TYPE"] = opcItemList.Find(item => item.ItemID == "PLT_TYPE")?.Value;
+            itemValues["Car_Type"] = opcItemList.Find(item => item.ItemID == "Car_Type")?.Value;
+            itemValues["Item"] = opcItemList.Find(item => item.ItemID == "Item")?.Value;
+            itemValues["Spec"] = opcItemList.Find(item => item.ItemID == "Spec")?.Value;
+            itemValues["LINE"] = opcItemList.Find(item => item.ItemID == "LINE")?.Value;
+            itemValues["Parts_count_int_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_int_pallet")?.Value;
+            itemValues["Counts"] = opcItemList.Find(item => item.ItemID == "Counts")?.Value;
 
             // t_In_reserve 테이블에 데이터 삽입
             string insertQuery = "INSERT INTO t_In_reserve (PLT_IN_OUT, Job_Line, Serial_No, PLT_Number, PLT_TYPE, Car_Type, Item, Spec, LINE, Parts_count_int_pallet, Counts) " +
