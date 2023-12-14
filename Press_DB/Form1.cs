@@ -25,24 +25,24 @@ namespace Press_DB
             try
             {
                 // OPCServer 객체를 생성하여 OPC 서버에 연결할 준비
-                opcServer = new OPCServer();
+               // opcServer = new OPCServer();
                 // OPC 서버에 연결
-                opcServer.Connect("OPCServerIP");
+               // opcServer.Connect("OPCServerIP");
 
                 // OPC Server 와 연결 성공 시 item 값 가져오기
 
                 //OPCGroup 생성
-                OPCGroup opcGroup = opcServer.OPCGroups.Add("OPCGroupName");
+               // OPCGroup opcGroup = opcServer.OPCGroups.Add("OPCGroupName");
                 // OPCGroup에 대한 OPCItems 개체 생성
-                OPCItems opcItems = opcGroup.OPCItems;
+               // OPCItems opcItems = opcGroup.OPCItems;
                 // 원하는 아이템 추가
-                OPCItem opcItem = opcItems.AddItem("YourItem", 1);
+                //OPCItem opcItem = opcItems.AddItem("YourItem", 1);
 
                 // OPCItem의 값을 저장할 변수
                 object value;
                 // OPCItem에서 값 읽기
-                opcItem.Read(1, out value, out _, out _);
-
+                //opcItem.Read(1, out value, out _, out _);
+                value = 71112;
                 // 데이터 베이스 연결 및 쿼리 실행
                 // SqlConnection 개체 생성
                 SqlConnection connection = new SqlConnection(ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString);
@@ -78,7 +78,9 @@ namespace Press_DB
                             // ListView에 추가
                             listView.Items.Add(listViewItem); // ListView에 아이템 추가
 
-                            
+                            // t_Cell 테이블을 매게변수 삼아 함수 실행.
+                            InsertToDatabase(reader1, connection, Convert.ToString(value));
+                            break;
                         }
                         else
                         {
@@ -106,6 +108,18 @@ namespace Press_DB
             }
         }
         
+        private void StopOPCThread()
+        {
+            // 스레드 루프를 종료하기 위해 stopThread 변수를 true 로 설정
+            stopThread = true;
+            // 만약 opcThread가 null이 아니고 동작 중이라면
+            //if (opcThread != null && opcThread.IsAlive)
+            {
+                // 스레드 종료
+                StopOPCThread();
+            }
+        }
+
         private void StartOPCThread()
         {
             opcThread = new Thread(new ThreadStart(() =>
@@ -120,9 +134,35 @@ namespace Press_DB
             opcThread.Start();
         }
 
-        private void AddToDatabase()
-        {
 
+
+        private void InsertToDatabase(SqlDataReader reader, SqlConnection connection, string item)
+        {
+            // t_In_reserve 테이블에 t_Cell의 데이터 삽입
+            string insertQuery = "INSERT INTO t_In_reserve (JobType, Cell, Pal_no, Pal_type, Model, Item, Spect, Line, Qty, Max_qty, Quailty, Prod_date, Prod_time, State, Pos, Udate, Utime) " +
+                "VALUES (@JobType, @Cell, @Pal_no, @Pal_type, @Model, @Item, @Spect, @Line, @Qty, @Max_qty, @Quailty, @Prod_date, @Prod_time, @State, @Pos, @Udate, @Utime)";
+
+            using (SqlCommand insertCommand = new SqlCommand(insertQuery, connection))
+            {
+                insertCommand.Parameters.AddWithValue("@JobType", reader["JobType"]);
+                insertCommand.Parameters.AddWithValue("@Cell", reader["Cell"]);
+                insertCommand.Parameters.AddWithValue("@Pal_no", reader["Pal_no"]);
+                insertCommand.Parameters.AddWithValue("@Pal_type", reader["Pal_type"]);
+                insertCommand.Parameters.AddWithValue("@Model", reader["Model"]);
+                insertCommand.Parameters.AddWithValue("@Item", item);
+                insertCommand.Parameters.AddWithValue("@Spect", reader["Spect"]);
+                insertCommand.Parameters.AddWithValue("@Line", reader["Line"]);
+                insertCommand.Parameters.AddWithValue("@Qty", (int)reader["Qty"]); // int 형태의 Qty 값
+                insertCommand.Parameters.AddWithValue("@Max_qty", (int)reader["Max_qty"]); // int 형태의 Max_qty 값
+                insertCommand.Parameters.AddWithValue("@Quailty", reader["Quailty"]);
+                insertCommand.Parameters.AddWithValue("@Prod_date", reader["Prod_date"]);
+                insertCommand.Parameters.AddWithValue("@Prod_time", reader["Prod_time"]);
+                insertCommand.Parameters.AddWithValue("@State", "INCOMP");
+                insertCommand.Parameters.AddWithValue("@Pos", reader["Pos"]);
+                insertCommand.Parameters.AddWithValue("@Udate", DateTime.Now.ToString("yyyy-MM-dd"));
+                insertCommand.Parameters.AddWithValue("@Utime", DateTime.Now.ToString("HH:mm:ss"));
+            }
+           
         }
     }
 }
