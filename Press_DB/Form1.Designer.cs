@@ -29,13 +29,13 @@
         private void InitializeComponent()
         {
             groupBox3 = new GroupBox();
-            ItemView = new ListView();
+            listView = new ListView();
             groupBox3.SuspendLayout();
             SuspendLayout();
             // 
             // groupBox3
             // 
-            groupBox3.Controls.Add(ItemView);
+            groupBox3.Controls.Add(listView);
             groupBox3.Location = new Point(4, 12);
             groupBox3.Name = "groupBox3";
             groupBox3.Size = new Size(1253, 953);
@@ -43,13 +43,13 @@
             groupBox3.TabStop = false;
             groupBox3.Text = "groupBox3";
             // 
-            // ItemView
+            // listView
             // 
-            ItemView.Location = new Point(6, 26);
-            ItemView.Name = "ItemView";
-            ItemView.Size = new Size(1241, 927);
-            ItemView.TabIndex = 0;
-            ItemView.UseCompatibleStateImageBehavior = false;
+            listView.Location = new Point(6, 26);
+            listView.Name = "listView";
+            listView.Size = new Size(1241, 927);
+            listView.TabIndex = 0;
+            listView.UseCompatibleStateImageBehavior = false;
             // 
             // Form1
             // 
@@ -65,6 +65,6 @@
 
         #endregion
         private GroupBox groupBox3;
-        private ListView ItemView;
+        private ListView listView;
     }
 }
