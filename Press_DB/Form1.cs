@@ -10,159 +10,126 @@ namespace Press_DB
 {
     public partial class Form1 : Form
     {
-        private OPCServer opcServer; // OPC 서버 연결을 담당하는 객체
-        private Thread opcThread; // OPC 통신을 위한 스레드
-        private bool stopThread = false; // 스레드 멈추기 위한 플래그
+        // OPC 관련 변수 및 객체 선언
+        private OPCServer opcServer;
+        private OPCItems opcItems;
+        private List<OPCItem> opcItemList = new List<OPCItem>();
 
         public Form1()
         {
             InitializeComponent();
-            StartOPCThread();
+            StartThread();
         }
 
+        // 데이터베이스 연결 문자열
+        private string connectionString = ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString;
+
+        // OPC 서버 연결 및 데이터 수집 메서드
         private void ConnectToOPCServer()
         {
-            try
+            // OPC 서버 연결
+            opcServer = new OPCServer();
+            opcServer.Connect("OPCServerIP");
+
+            // OPC 아이템 추가 (예시)
+            opcItems = opcServer.OPCItems;
+            opcItemList.Add(opcItems.AddItem("PLT_IN_OUT", 1));
+            opcItemList.Add(opcItems.AddItem("Job_Line", 1));
+            opcItemList.Add(opcItems.AddItem("Serial_No"), 1);
+            opcItemList.Add(opcItems.AddItem("PLT_Number"), 1);
+            opcItemList.Add(opcItems.AddItem("PLT_TYPE"), 1);
+            opcItemList.Add(opcItems.AddItem("Car_Type"), 1);
+            opcItemList.Add(opcItems.AddItem("Item"), 1);
+            opcItemList.Add(opcItems.AddItem("Spec"), 1);
+            opcItemList.Add(opcItems.AddItem("LINE"), 1);
+            opcItemList.Add(opcItems.AddItem("Parts_count_int_pallet"), 1);
+            opcItemList.Add(opcItems.AddItem("Counts"), 1);
+
+            // 필요한 나머지 OPC 아이템 추가
+
+            // 데이터베이스 연결
+            using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                // OPCServer 객체를 생성하여 OPC 서버에 연결할 준비
-               // opcServer = new OPCServer();
-                // OPC 서버에 연결
-               // opcServer.Connect("OPCServerIP");
-
-                // OPC Server 와 연결 성공 시 item 값 가져오기
-
-                //OPCGroup 생성
-               // OPCGroup opcGroup = opcServer.OPCGroups.Add("OPCGroupName");
-                // OPCGroup에 대한 OPCItems 개체 생성
-               // OPCItems opcItems = opcGroup.OPCItems;
-                // 원하는 아이템 추가
-                //OPCItem opcItem = opcItems.AddItem("YourItem", 1);
-
-                // OPCItem의 값을 저장할 변수
-                object value;
-                // OPCItem에서 값 읽기
-                //opcItem.Read(1, out value, out _, out _);
-                value = 71112;
-                // 데이터 베이스 연결 및 쿼리 실행
-                // SqlConnection 개체 생성
-                SqlConnection connection = new SqlConnection(ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString);
-                // 데이터베이스 연결 열기
                 connection.Open();
 
-                // t_Cell 테이블에서 데이터 가져오기
-                SqlCommand command1 = new SqlCommand("SELECT * FROM t_Cell", connection); // t_Cell 테이블에서 모든 열 선택
-                SqlDataReader reader1 = command1.ExecuteReader(); // 쿼리 실행 및 결과 읽기
+                // t_Cell 테이블에서 Cell_type 및 State 가져오기
+                SqlCommand cmdCell = new SqlCommand("SELECT Cell_type, State FROM t_Cell", connection);
+                SqlDataReader readerCell = cmdCell.ExecuteReader();
 
-                // 결과 행 반복
-                while (reader1.Read())
+                while (readerCell.Read())
                 {
-                    // Cell_type 과 State 값 가져오기
-                    int cellType = (int)reader1["Cell_type"]; // Cell_type 열 값 가져오기
-                    string state = (string)reader1["State"]; // State 열 값 가져오기
+                    int cellType = Convert.ToInt32(readerCell["Cell_type"]);
+                    string state = readerCell["State"].ToString();
 
-                    // t_SC_sate 테이블에서 Stk_no 컬럼 값들의 Stk_sate 값 가져오기
-                    SqlCommand command2 = new SqlCommand("SELECT Stk_state FROM t_SC_state WHERE Stk_no = @StkNo", connection); // Stk_no에 해당하는 Stk_state 값 선택
-                    command2.Parameters.AddWithValue("@StkNo", reader1["Stk_no"]); // 파라미터 설정
-                    SqlDataReader reader2 = command2.ExecuteReader(); // 쿼리 실행 및 결과 읽기
+                    // t_SC_state 테이블에서 Stk_state 값 가져오기
+                    SqlCommand cmdSCState = new SqlCommand("SELECT Stk_state FROM t_SC_state", connection);
+                    SqlDataReader readerSCState = cmdSCState.ExecuteReader();
 
-                    while (reader2.Read()) // 결과 행 반복
+                    while (readerSCState.Read())
                     {
-                        int stkState = (int)reader2["Stk_state"]; // Stk_state 열 값 가져오기
-
-                        // 조건 확인 후 ListView에 아이템 추가
-                        if (Convert.ToInt32(value) <= cellType && state == "EMPTY" && stkState == 0)
+                        int stkState = Convert.ToInt32(readerSCState["Stk_state"]);
+                        
+                        int value = Convert.ToInt32(opcItemList.Find(item => item.ItemName == "Item"));
+                        // 조건 검사 및 처리
+                        // opcItemList 리스트의 원하는 인덱스를 사용하여 OPC 아이템 값에 접근하여 조건 검사
+                        if (value < cellType && state == "Empty" && stkState == 0)
                         {
-                            // ListView에 추가할 아이템 생성 및 추가
-                            ListViewItem listViewItem = new ListViewItem(reader1["Cell_type"].ToString()); // t_Cell 테이블에서 가져온 값 추가
-                            listViewItem.SubItems.Add(reader2["Stk_state"].ToString()); // t_SC_sate 테이블에서 가져온 값 추가
-                            // ListView에 추가
-                            listView.Items.Add(listViewItem); // ListView에 아이템 추가
-
-                            // t_Cell 테이블을 매게변수 삼아 함수 실행.
-                            InsertToDatabase(reader1, connection, Convert.ToString(value));
-                            break;
-                        }
-                        else
-                        {
-                            if(Convert.ToInt32(value) > cellType)
-                            {
-                                listView.Items.Add(cellType.ToString(),"Cell의 크기가 item 크기보다 작습니다");
-                            }
+                            // In_reserve 값 저장
+                            // 이 부분에서 In_reserve 값을 저장하는 방법에 따라 적절한 처리를 추가하세요.
+                            // 예: SqlCommand를 사용하여 데이터베이스에 값을 삽입하는 방법 등
                         }
                     }
-                    // reader2 닫기
-                    reader2.Close();
-                }
-                // reader1 닫기
-                reader1.Close();
 
-                // 데이터베이스 연결 닫기
+                    readerSCState.Close();
+                }
+
+                readerCell.Close();
                 connection.Close();
             }
 
-            // 예외 처리
-            catch (Exception ex)
-            {
-                // 예외 메시지 표시
-                MessageBox.Show("Error : " + ex.Message);
-            }
-        }
-        
-        private void StopOPCThread()
-        {
-            // 스레드 루프를 종료하기 위해 stopThread 변수를 true 로 설정
-            stopThread = true;
-            // 만약 opcThread가 null이 아니고 동작 중이라면
-            //if (opcThread != null && opcThread.IsAlive)
-            {
-                // 스레드 종료
-                StopOPCThread();
-            }
+            // 스레드 종료
+            // 필요한 경우 스레드 종료 처리 추가
         }
 
-        private void StartOPCThread()
+        private void InsertToDatabase(SqlConnection connection)
         {
-            opcThread = new Thread(new ThreadStart(() =>
+            // 아이템 이름과 값의 딕셔너리 생성
+            Dictionary<string, object> itemValues = new Dictionary<string, object>();
+
+            // 각 아이템의 값을 딕셔너리에 추가
+            itemValues["PLT_IN_OUT"] = opcItemList.Find(item => item.ItemName == "PLT_IN_OUT")?.Value;
+            itemValues["Job_Line"] = opcItemList.Find(item => item.ItemName == "Job_Line")?.Value;
+            itemValues["Serial_No"] = opcItemList.Find(item => item.ItemName == "Serial_No")?.Value;
+            itemValues["PLT_Number"] = opcItemList.Find(item => item.ItemName == "PLT_Number")?.Value;
+            itemValues["PLT_TYPE"] = opcItemList.Find(item => item.ItemName == "PLT_TYPE")?.Value;
+            itemValues["Car_Type"] = opcItemList.Find(item => item.ItemName == "Car_Type")?.Value;
+            itemValues["Item"] = opcItemList.Find(item => item.ItemName == "Item")?.Value;
+            itemValues["Spec"] = opcItemList.Find(item => item.ItemName == "Spec")?.Value;
+            itemValues["LINE"] = opcItemList.Find(item => item.ItemName == "LINE")?.Value;
+            itemValues["Parts_count_int_pallet"] = opcItemList.Find(item => item.ItemName == "Parts_count_int_pallet")?.Value;
+            itemValues["Counts"] = opcItemList.Find(item => item.ItemName == "Counts")?.Value;
+
+            // t_In_reserve 테이블에 데이터 삽입
+            string insertQuery = "INSERT INTO t_In_reserve (PLT_IN_OUT, Job_Line, Serial_No, PLT_Number, PLT_TYPE, Car_Type, Item, Spec, LINE, Parts_count_int_pallet, Counts) " +
+                                 "VALUES (@PLT_IN_OUT, @Job_Line, @Serial_No, @PLT_Number, @PLT_TYPE, @Car_Type, @Item, @Spec, @LINE, @Parts_count_int_pallet, @Counts)";
+
+            SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
+
+            // 딕셔너리의 값들을 SQL 매개변수에 추가
+            foreach (var kvp in itemValues)
             {
-                while (!stopThread)
-                {
-                    ConnectToOPCServer();
-                    // 0.2초마다 실행
-                    Thread.Sleep(200);
-                }
-            }));
+                cmdInsert.Parameters.AddWithValue("@" + kvp.Key, kvp.Value ?? DBNull.Value);
+            }
+
+            // 쿼리 실행
+            cmdInsert.ExecuteNonQuery();
+        }
+
+        // 스레드 시작부분
+        private void StartThread()
+        {
+            Thread opcThread = new Thread(new ThreadStart(ConnectToOPCServer));
             opcThread.Start();
-        }
-
-
-
-        private void InsertToDatabase(SqlDataReader reader, SqlConnection connection, string item)
-        {
-            // t_In_reserve 테이블에 t_Cell의 데이터 삽입
-            string insertQuery = "INSERT INTO t_In_reserve (JobType, Cell, Pal_no, Pal_type, Model, Item, Spect, Line, Qty, Max_qty, Quailty, Prod_date, Prod_time, State, Pos, Udate, Utime) " +
-                "VALUES (@JobType, @Cell, @Pal_no, @Pal_type, @Model, @Item, @Spect, @Line, @Qty, @Max_qty, @Quailty, @Prod_date, @Prod_time, @State, @Pos, @Udate, @Utime)";
-
-            using (SqlCommand insertCommand = new SqlCommand(insertQuery, connection))
-            {
-                insertCommand.Parameters.AddWithValue("@JobType", reader["JobType"]);
-                insertCommand.Parameters.AddWithValue("@Cell", reader["Cell"]);
-                insertCommand.Parameters.AddWithValue("@Pal_no", reader["Pal_no"]);
-                insertCommand.Parameters.AddWithValue("@Pal_type", reader["Pal_type"]);
-                insertCommand.Parameters.AddWithValue("@Model", reader["Model"]);
-                insertCommand.Parameters.AddWithValue("@Item", item);
-                insertCommand.Parameters.AddWithValue("@Spect", reader["Spect"]);
-                insertCommand.Parameters.AddWithValue("@Line", reader["Line"]);
-                insertCommand.Parameters.AddWithValue("@Qty", (int)reader["Qty"]); // int 형태의 Qty 값
-                insertCommand.Parameters.AddWithValue("@Max_qty", (int)reader["Max_qty"]); // int 형태의 Max_qty 값
-                insertCommand.Parameters.AddWithValue("@Quailty", reader["Quailty"]);
-                insertCommand.Parameters.AddWithValue("@Prod_date", reader["Prod_date"]);
-                insertCommand.Parameters.AddWithValue("@Prod_time", reader["Prod_time"]);
-                insertCommand.Parameters.AddWithValue("@State", "INCOMP");
-                insertCommand.Parameters.AddWithValue("@Pos", reader["Pos"]);
-                insertCommand.Parameters.AddWithValue("@Udate", DateTime.Now.ToString("yyyy-MM-dd"));
-                insertCommand.Parameters.AddWithValue("@Utime", DateTime.Now.ToString("HH:mm:ss"));
-            }
-           
         }
     }
 }
