@@ -4,8 +4,6 @@ using System.Windows.Forms;
 using System.Configuration;
 using System.Data.SqlClient;
 using OPCAutomation;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using System.Security.Cryptography;
 
 namespace Press_DB
 {
@@ -35,6 +33,7 @@ namespace Press_DB
 
         // 데이터베이스 연결 문자열
         private string connectionString = ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString;
+        private string opcServerIP = ConfigurationManager.AppSettings["OPCServerIP"];
 
         // OPC 서버 연결 및 데이터 수집 메서드
         private void ConnectToOPCServer()
@@ -42,7 +41,7 @@ namespace Press_DB
             // OPC 서버 연결
             opcServer = new OPCServer();
             // OPC 서버에 연결
-            opcServer.Connect("OPCServerIP");
+            opcServer.Connect(opcServerIP);
 
             // OPC 그룹 생성 및 설정
             opcGroups = opcServer.OPCGroups; // opc 서버에서 그룹을 관리하는 객체를 가져옴
