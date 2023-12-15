@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "0u3HubnttP/HfvjZYh++4JBCPgbFmmA5dhSGp3LdCbaLRbqyIxllKour+MNNmdvOYml6lCw7kcq8tkF8BcHl2g==",
+  "dgSpecHash": "/POhlLxCFFlpO9IVxen7I1S1YczAzN+k5llo6MY0eEDSTaDsmxCbShyBBEilzQ1YLMKUr3/7uM26201CUt6VDw==",
   "success": true,
   "projectFilePath": "C:\\Users\\강재현\\Documents\\GitHub\\SYSSystem\\Press_DB\\Press_DB.csproj",
   "expectedPackageFiles": [
@@ -12,7 +12,8 @@
     "C:\\Users\\강재현\\.nuget\\packages\\runtime.win-x86.runtime.native.system.data.sqlclient.sni\\4.4.0\\runtime.win-x86.runtime.native.system.data.sqlclient.sni.4.4.0.nupkg.sha512",
     "C:\\Users\\강재현\\.nuget\\packages\\system.data.sqlclient\\4.8.5\\system.data.sqlclient.4.8.5.nupkg.sha512",
     "C:\\Users\\강재현\\.nuget\\packages\\system.security.accesscontrol\\4.7.0\\system.security.accesscontrol.4.7.0.nupkg.sha512",
-    "C:\\Users\\강재현\\.nuget\\packages\\system.security.principal.windows\\4.7.0\\system.security.principal.windows.4.7.0.nupkg.sha512"
+    "C:\\Users\\강재현\\.nuget\\packages\\system.security.principal.windows\\4.7.0\\system.security.principal.windows.4.7.0.nupkg.sha512",
+    "C:\\Users\\강재현\\.nuget\\packages\\microsoft.windows.sdk.net.ref\\10.0.22621.31\\microsoft.windows.sdk.net.ref.10.0.22621.31.nupkg.sha512"
   ],
   "logs": []
 }

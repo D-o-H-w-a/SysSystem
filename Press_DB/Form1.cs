@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using System.Configuration;
 using System.Data.SqlClient;
 using OPCAutomation;
+using static System.Windows.Forms.AxHost;
 
 namespace Press_DB
 {
@@ -24,6 +25,9 @@ namespace Press_DB
         // OPC 통신을 위한 스레드 변수 선언 
         private Thread opcThread;
 
+        // 데이터베이스 테스트용
+        private List<object> testitem = new List<object>();
+
         public Form1()
         {
             InitializeComponent();
@@ -38,6 +42,7 @@ namespace Press_DB
         // OPC 서버 연결 및 데이터 수집 메서드
         private void ConnectToOPCServer()
         {
+            /*
             // OPC 서버 연결
             opcServer = new OPCServer();
             // OPC 서버에 연결
@@ -68,14 +73,29 @@ namespace Press_DB
             opcItemList.Add(opcItems.AddItem("Parts_count_int_pallet", 1));
             opcItemList.Add(opcItems.AddItem("Counts", 1));
 
+            */
+
+            testitem.Add("PLT_IN_OUT");
+            testitem.Add("Job_Line");
+            testitem.Add("Serial_No");
+            testitem.Add("PLT_Number");
+            testitem.Add("PLT_TYPE");
+            testitem.Add("Car_Type");
+            testitem.Add("Item");
+            testitem.Add("Spec");
+            testitem.Add("LINE");
+            testitem.Add("Parts_count_int_pallet");
+            testitem.Add("Counts");
+
             // 데이터베이스 연결
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
+                string cell = new string("");
                 // 데이터 베이스 연결을 열어옴
                 connection.Open();
 
                 // t_Cell 테이블에서 Cell_type 및 State 가져오기
-                SqlCommand cmdCell = new SqlCommand("SELECT Cell_type, State FROM t_Cell", connection);
+                SqlCommand cmdCell = new SqlCommand("SELECT Cell_type, State, Cell FROM t_Cell", connection);
                 // 셀 정보를 가져오기 위한 쿼리 실행
                 SqlDataReader readerCell = cmdCell.ExecuteReader();
 
@@ -83,36 +103,80 @@ namespace Press_DB
                 while (readerCell.Read())
                 {
                     // Cell_type 의 값을 가져옴
-                    int cellType = Convert.ToInt32(readerCell["Cell_type"]);
+                    string cellType = readerCell["Cell_type"].ToString();
                     // State 의 값을 가져옴
                     string state = readerCell["State"].ToString();
 
-                    // t_SC_state 테이블에서 Stk_state 값 가져오기
-                    SqlCommand cmdSCState = new SqlCommand("SELECT Stk_state FROM t_SC_state", connection);
-                    // SC_state 정보를 가져오기 위한 쿼리 실행
-                    SqlDataReader readerSCState = cmdSCState.ExecuteReader();
+                    int value = 71112;// Convert.ToInt32(opcItemList.Find(item => item.ItemID == "Item"));
 
-                    // t_SC_state 테이블 레코드 반복
-                    while (readerSCState.Read())
+                    if (!string.IsNullOrEmpty(cellType))
                     {
-                        // Stk_state 의 값을 가져옴
-                        int stkState = Convert.ToInt32(readerSCState["Stk_state"]);
-                        //OPC 아이템 값 가져오기
-                        int value = Convert.ToInt32(opcItemList.Find(item => item.ItemID == "Item"));
-                        // 조건 검사 및 처리
-                        // OPC 아이템 값과 데이터베이스에서 가져온 값들을 조건으로 검사
-                        if (value < cellType && state == "Empty" && stkState == 0)
+                        if (value <= Convert.ToInt32(cellType) && state == "EMPTY")
                         {
-                            // 조건에 맞을 경우 데이터베이스에 삽입
-                            InsertToDatabase(connection);
+                            cell = Convert.ToString(readerCell["Cell"]);
+                            // t_Cell 리더 닫기
+                            readerCell.Close();
+                            break;
+                        }
+
+                        else if (value > int.Parse(cellType))
+                        {
+                            UpdateListView("셀 공간이 적합하지 않음");
+                        }
+
+                        else if (state != "Emtpy")
+                        {
+                            switch (state)
+                            {
+                                case "INRUN":
+                                    UpdateListView("입고 진행 중");
+                                    break;
+                                case "OUTRUN":
+                                    UpdateListView("출고 진행 중");
+                                    break;
+                                case "INCOMP":
+                                    UpdateListView("입고 완료");
+                                    break;
+                                case "OUTCOMP":
+                                    UpdateListView("출고 완료");
+                                    break;
+                            }
                         }
                     }
-                    // t_SC_state 리더 닫기
-                    readerSCState.Close();
                 }
 
-                // t_Cell 리더 닫기
-                readerCell.Close();
+                // t_SC_state 테이블에서 Stk_state 값 가져오기
+                SqlCommand cmdSCState = new SqlCommand("SELECT Stk_mode FROM t_Run_mode ORDER BY Stk_no", connection);
+                // SC_state 정보를 가져오기 위한 쿼리 실행
+                SqlDataReader readerSCState = cmdSCState.ExecuteReader();
+
+                // t_SC_state 테이블 레코드 반복
+                while (readerSCState.Read())
+                {
+                    // Stk_state 의 값을 가져옴
+                    int stkState = Convert.ToInt32(readerSCState["Stk_mode"]);
+                    //OPC 아이템 값 가져오기
+                    
+                    // 조건 검사 및 처리
+                    // OPC 아이템 값과 데이터베이스에서 가져온 값들을 조건으로 검사
+                    if (stkState == 0)
+                    {
+                        // 조건에 맞을 경우 데이터베이스에 삽입
+                        // t_SC_state 리더 닫기
+                        readerSCState.Close();
+                        break;
+                    }
+                    else
+                    {
+                        if (stkState != 1)
+                        {
+                            UpdateListView(stkState + "번 크레인 Error 상태");
+                        }
+                    }
+                }
+
+                UpdateListView("데이터 정상 저장");
+                //InsertToDatabase(connection, cell);
                 // 데이터베이스 연결 닫기
                 connection.Close();
                 // 스레드 종료
@@ -120,12 +184,29 @@ namespace Press_DB
             }
         }
 
-        private void InsertToDatabase(SqlConnection connection)
+        void UpdateListView(string text)
+        {
+            if (listView.InvokeRequired)
+            {
+                listView.Invoke((MethodInvoker)delegate {
+                    // ListView 업데이트 등 UI 작업 수행
+                    listView.Items.Add(text);
+                });
+            }
+            else
+            {
+                // 현재 UI 스레드에서 실행 중인 경우
+                listView.Items.Add(text);
+            }
+        }
+
+        private void InsertToDatabase(SqlConnection connection, string cell)
         {
             // 아이템 이름과 값의 딕셔너리 생성
             Dictionary<string, object> itemValues = new Dictionary<string, object>();
 
             // 각 아이템의 값을 딕셔너리에 추가
+            itemValues["Cell"] = cell;
             itemValues["PLT_IN_OUT"] = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
             itemValues["Job_Line"] = opcItemList.Find(item => item.ItemID == "Job_Line")?.Value;
             itemValues["Serial_No"] = opcItemList.Find(item => item.ItemID == "Serial_No")?.Value;
@@ -139,8 +220,8 @@ namespace Press_DB
             itemValues["Counts"] = opcItemList.Find(item => item.ItemID == "Counts")?.Value;
 
             // t_In_reserve 테이블에 데이터 삽입
-            string insertQuery = "INSERT INTO t_In_reserve (PLT_IN_OUT, Job_Line, Serial_No, PLT_Number, PLT_TYPE, Car_Type, Item, Spec, LINE, Parts_count_int_pallet, Counts) " +
-                                 "VALUES (@PLT_IN_OUT, @Job_Line, @Serial_No, @PLT_Number, @PLT_TYPE, @Car_Type, @Item, @Spec, @LINE, @Parts_count_int_pallet, @Counts)";
+            string insertQuery = "INSERT INTO t_In_reserve (Cell, PLT_IN_OUT, Job_Line, Serial_No, PLT_Number, PLT_TYPE, Car_Type, Item, Spec, LINE, Parts_count_int_pallet, Counts) " +
+                                 "VALUES (@Cell, @PLT_IN_OUT, @Job_Line, @Serial_No, @PLT_Number, @PLT_TYPE, @Car_Type, @Item, @Spec, @LINE, @Parts_count_int_pallet, @Counts)";
 
             SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
 
@@ -170,7 +251,7 @@ namespace Press_DB
             if (opcThread != null && opcThread.IsAlive)
             { 
                 // 스레드 종료 요청
-                opcThread.Abort();
+                opcThread.Join();
             }
         }
 

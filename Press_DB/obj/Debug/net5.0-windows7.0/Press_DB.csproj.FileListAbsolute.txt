@@ -1,0 +1,10 @@
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net5.0-windows7.0\Press_DB.csproj.AssemblyReference.cache
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net5.0-windows7.0\Interop.OPCAutomation.dll
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net5.0-windows7.0\Press_DB.csproj.ResolveComReference.cache
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net5.0-windows7.0\Press_DB.Form1.resources
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net5.0-windows7.0\Press_DB.csproj.GenerateResource.cache
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net5.0-windows7.0\Press_DB.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net5.0-windows7.0\Press_DB.AssemblyInfoInputs.cache
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net5.0-windows7.0\Press_DB.AssemblyInfo.cs
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net5.0-windows7.0\Press_DB.csproj.CoreCompileInputs.cache
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net5.0-windows7.0\Press_DB.sourcelink.json
