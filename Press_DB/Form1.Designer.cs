@@ -28,43 +28,124 @@
         /// </summary>
         private void InitializeComponent()
         {
-            groupBox3 = new GroupBox();
+            listBox = new GroupBox();
             listView = new ListView();
-            groupBox3.SuspendLayout();
+            stateHeader = new ColumnHeader();
+            dateHeader = new ColumnHeader();
+            timeHeader = new ColumnHeader();
+            uiBox = new GroupBox();
+            stateTxt = new TextBox();
+            readBtn = new Button();
+            setResetBtn = new Button();
+            listBox.SuspendLayout();
+            uiBox.SuspendLayout();
             SuspendLayout();
             // 
-            // groupBox3
+            // listBox
             // 
-            groupBox3.Controls.Add(listView);
-            groupBox3.Location = new Point(4, 12);
-            groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(1253, 953);
-            groupBox3.TabIndex = 1;
-            groupBox3.TabStop = false;
-            groupBox3.Text = "groupBox3";
+            listBox.Controls.Add(listView);
+            listBox.Location = new Point(4, 158);
+            listBox.Name = "listBox";
+            listBox.Size = new Size(1253, 807);
+            listBox.TabIndex = 1;
+            listBox.TabStop = false;
             // 
             // listView
             // 
-            listView.Location = new Point(6, 26);
+            listView.BackColor = SystemColors.Window;
+            listView.Columns.AddRange(new ColumnHeader[] { stateHeader, dateHeader, timeHeader });
+            listView.ForeColor = SystemColors.WindowFrame;
+            listView.Location = new Point(5, 26);
             listView.Name = "listView";
-            listView.Size = new Size(1241, 927);
+            listView.Size = new Size(1241, 781);
             listView.TabIndex = 0;
             listView.UseCompatibleStateImageBehavior = false;
+            listView.View = View.Details;
+            // 
+            // stateHeader
+            // 
+            stateHeader.Text = "통신상태";
+            stateHeader.Width = 826;
+            // 
+            // dateHeader
+            // 
+            dateHeader.Text = "통신날짜";
+            dateHeader.TextAlign = HorizontalAlignment.Center;
+            dateHeader.Width = 205;
+            // 
+            // timeHeader
+            // 
+            timeHeader.Text = "통신시간";
+            timeHeader.TextAlign = HorizontalAlignment.Center;
+            timeHeader.Width = 205;
+            // 
+            // uiBox
+            // 
+            uiBox.Controls.Add(stateTxt);
+            uiBox.Controls.Add(readBtn);
+            uiBox.Controls.Add(setResetBtn);
+            uiBox.Location = new Point(9, 12);
+            uiBox.Name = "uiBox";
+            uiBox.Size = new Size(1241, 140);
+            uiBox.TabIndex = 2;
+            uiBox.TabStop = false;
+            // 
+            // stateTxt
+            // 
+            stateTxt.BorderStyle = BorderStyle.None;
+            stateTxt.Location = new Point(533, 104);
+            stateTxt.Name = "stateTxt";
+            stateTxt.ReadOnly = true;
+            stateTxt.Size = new Size(154, 20);
+            stateTxt.TabIndex = 1;
+            stateTxt.Text = "State:";
+            // 
+            // readBtn
+            // 
+            readBtn.BackColor = SystemColors.HotTrack;
+            readBtn.ForeColor = Color.White;
+            readBtn.Location = new Point(1096, 20);
+            readBtn.Name = "readBtn";
+            readBtn.Size = new Size(139, 52);
+            readBtn.TabIndex = 0;
+            readBtn.Text = "Write";
+            readBtn.UseVisualStyleBackColor = false;
+            // 
+            // setResetBtn
+            // 
+            setResetBtn.BackColor = SystemColors.HotTrack;
+            setResetBtn.ForeColor = Color.White;
+            setResetBtn.Location = new Point(1096, 82);
+            setResetBtn.Name = "setResetBtn";
+            setResetBtn.Size = new Size(139, 52);
+            setResetBtn.TabIndex = 0;
+            setResetBtn.Text = "SetReset";
+            setResetBtn.UseVisualStyleBackColor = false;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(9F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(1262, 977);
-            Controls.Add(groupBox3);
+            Controls.Add(uiBox);
+            Controls.Add(listBox);
             Name = "Form1";
             Text = "OPCClinet";
-            groupBox3.ResumeLayout(false);
+            listBox.ResumeLayout(false);
+            uiBox.ResumeLayout(false);
+            uiBox.PerformLayout();
             ResumeLayout(false);
         }
 
         #endregion
-        private GroupBox groupBox3;
+        private GroupBox listBox;
+        private GroupBox uiBox;
+        private Button readBtn;
+        private Button setResetBtn;
+        private TextBox stateTxt;
         private ListView listView;
+        private ColumnHeader stateHeader;
+        private ColumnHeader dateHeader;
+        private ColumnHeader timeHeader;
     }
 }

@@ -156,7 +156,7 @@ namespace Press_DB
                     // Stk_state 의 값을 가져옴
                     int stkState = Convert.ToInt32(readerSCState["Stk_mode"]);
                     //OPC 아이템 값 가져오기
-                    
+
                     // 조건 검사 및 처리
                     // OPC 아이템 값과 데이터베이스에서 가져온 값들을 조건으로 검사
                     if (stkState == 0)
@@ -188,9 +188,10 @@ namespace Press_DB
         {
             if (listView.InvokeRequired)
             {
-                listView.Invoke((MethodInvoker)delegate {
+                listView.Invoke((MethodInvoker)delegate
+                {
                     // ListView 업데이트 등 UI 작업 수행
-                    listView.Items.Add(text);
+                    listView.Items.Add(stateHeader.Text);
                 });
             }
             else
@@ -249,11 +250,10 @@ namespace Press_DB
         {
             // opcThread 값이 null 아니며 opcThread 가 동작중일 시
             if (opcThread != null && opcThread.IsAlive)
-            { 
+            {
                 // 스레드 종료 요청
                 opcThread.Join();
             }
         }
-
     }
 }
