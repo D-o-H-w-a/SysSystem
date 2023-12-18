@@ -30,13 +30,14 @@
         {
             listBox = new GroupBox();
             listView = new ListView();
-            stateHeader = new ColumnHeader();
+            cellState = new ColumnHeader();
             dateHeader = new ColumnHeader();
             timeHeader = new ColumnHeader();
             uiBox = new GroupBox();
             stateTxt = new TextBox();
             readBtn = new Button();
             setResetBtn = new Button();
+            cellNum = new ColumnHeader();
             listBox.SuspendLayout();
             uiBox.SuspendLayout();
             SuspendLayout();
@@ -53,31 +54,34 @@
             // listView
             // 
             listView.BackColor = SystemColors.Window;
-            listView.Columns.AddRange(new ColumnHeader[] { stateHeader, dateHeader, timeHeader });
+            listView.BorderStyle = BorderStyle.FixedSingle;
+            listView.Columns.AddRange(new ColumnHeader[] { cellNum, cellState, dateHeader, timeHeader });
             listView.ForeColor = SystemColors.WindowFrame;
             listView.Location = new Point(5, 26);
             listView.Name = "listView";
+            listView.RightToLeft = RightToLeft.No;
             listView.Size = new Size(1241, 781);
             listView.TabIndex = 0;
             listView.UseCompatibleStateImageBehavior = false;
             listView.View = View.Details;
             // 
-            // stateHeader
+            // cellState
             // 
-            stateHeader.Text = "통신상태";
-            stateHeader.Width = 826;
+            cellState.Text = "셀 상태";
+            cellState.TextAlign = HorizontalAlignment.Center;
+            cellState.Width = 826;
             // 
             // dateHeader
             // 
-            dateHeader.Text = "통신날짜";
+            dateHeader.Text = "작업 날짜";
             dateHeader.TextAlign = HorizontalAlignment.Center;
-            dateHeader.Width = 205;
+            dateHeader.Width = 170;
             // 
             // timeHeader
             // 
-            timeHeader.Text = "통신시간";
+            timeHeader.Text = "작업 시간";
             timeHeader.TextAlign = HorizontalAlignment.Center;
-            timeHeader.Width = 205;
+            timeHeader.Width = 170;
             // 
             // uiBox
             // 
@@ -108,7 +112,7 @@
             readBtn.Name = "readBtn";
             readBtn.Size = new Size(139, 52);
             readBtn.TabIndex = 0;
-            readBtn.Text = "Write";
+            readBtn.Text = "Read";
             readBtn.UseVisualStyleBackColor = false;
             // 
             // setResetBtn
@@ -121,6 +125,11 @@
             setResetBtn.TabIndex = 0;
             setResetBtn.Text = "SetReset";
             setResetBtn.UseVisualStyleBackColor = false;
+            // 
+            // cellNum
+            // 
+            cellNum.Text = "셀 번호";
+            cellNum.Width = 70;
             // 
             // Form1
             // 
@@ -144,8 +153,9 @@
         private Button setResetBtn;
         private TextBox stateTxt;
         private ListView listView;
-        private ColumnHeader stateHeader;
+        private ColumnHeader cellState;
         private ColumnHeader dateHeader;
         private ColumnHeader timeHeader;
+        private ColumnHeader cellNum;
     }
 }
