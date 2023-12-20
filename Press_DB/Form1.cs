@@ -34,15 +34,38 @@ namespace Press_DB
         {
             InitializeComponent();
             // 스레드 시작 메소드 호출
-            StartThread();
         }
 
         // 데이터베이스 연결 문자열
         private string connectionString = ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString;
         private string opcServerIP = ConfigurationManager.AppSettings["OPCServerIP"];
 
+        // inBtn 버튼 클릭 시 0값을 보내어 InReserve 로 동작하게함
+        private void inBtn_Click(object sender, EventArgs e)
+        {
+            StartThread(0);
+        }
+
+        // 스레드 시작부분
+        private void StartThread(int reserve)
+        {
+            // CancellationTokenSource 생성
+            cancellationTokenSource = new CancellationTokenSource();
+
+            // CancellationTokenSource에서 Token 가져오기
+            CancellationToken cancellationToken = cancellationTokenSource.Token;
+
+
+            if (reserve == 0)
+            {
+                // 스레드 시작
+                opcThread = new Thread(() => inReserveData(cancellationToken));
+                opcThread.Start();
+            }
+        }
+
         // OPC 서버 연결 및 데이터 수집 메서드
-        private void ConnectToOPCServer(CancellationToken cancellationToken)
+        private void inReserveData(CancellationToken cancellationToken)
         {
             /*
             // OPC 서버 연결
@@ -88,7 +111,8 @@ namespace Press_DB
             testitem.Add("Parts_count_int_pallet");
             testitem.Add("Counts");
 
-            while (!cancellationToken.IsCancellationRequested) {
+            while (!cancellationToken.IsCancellationRequested)
+            {
                 // 데이터베이스 연결
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
@@ -179,32 +203,14 @@ namespace Press_DB
 
                     UpdateListView(cell, "데이터 정상 저장");
                     //InsertToDatabase(connection, cell);
-                    
-                    // 스레드 종료
-                    StopThread();
                 }
             }
         }
 
-        void UpdateListView(string stateCell, string numCell)
+        void UpdateListView(string numCell, string stateCell)
         {
-            if (listView.InvokeRequired)
-            {
-                listView.Invoke((MethodInvoker)delegate
-                {
-                    cellState.Text = stateCell;
-                    cellNum.Text = numCell;
-                    // ListView 업데이트 등 UI 작업 수행
-                    listView.Items.Add(cellState.Text);
-                });
-            }
-            else
-            {
-                cellState.Text = stateCell;
-                cellNum.Text = numCell;
-                // 현재 UI 스레드에서 실행 중인 경우
-                listView.Items.Add(cellState.Text);
-            }
+            // ListView 업데이트 등 UI 작업 수행
+            dataGrid.Rows.Add(stateCell, stateCell, DateTime.Now);
         }
 
         private void InsertToDatabase(SqlConnection connection, string cell)
@@ -245,18 +251,11 @@ namespace Press_DB
             connection.Close();
         }
 
-        // 스레드 시작부분
-        private void StartThread()
+        // 폼 종료시 작동되는 함수
+        private void Main_FormClosing(object sender, FormClosedEventArgs e)
         {
-            // CancellationTokenSource 생성
-            cancellationTokenSource = new CancellationTokenSource();
-
-            // CancellationTokenSource에서 Token 가져오기
-            CancellationToken cancellationToken = cancellationTokenSource.Token;
-
-            // 스레드 시작
-            opcThread = new Thread(() => ConnectToOPCServer(cancellationToken));
-            opcThread.Start();
+            // 스레드 종료
+            StopThread();
         }
 
         // 스레드 종료 메서드
@@ -268,6 +267,11 @@ namespace Press_DB
                 // 스레드 종료 요청
                 cancellationTokenSource.Cancel();
             }
+        }
+
+        private void outBtn_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -28,66 +28,32 @@
         /// </summary>
         private void InitializeComponent()
         {
-            listBox = new GroupBox();
-            listView = new ListView();
-            cellState = new ColumnHeader();
-            dateHeader = new ColumnHeader();
-            timeHeader = new ColumnHeader();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle8 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle9 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle10 = new DataGridViewCellStyle();
             uiBox = new GroupBox();
             stateTxt = new TextBox();
-            readBtn = new Button();
-            setResetBtn = new Button();
-            cellNum = new ColumnHeader();
-            listBox.SuspendLayout();
+            inBtn = new Button();
+            outBtn = new Button();
+            listBox = new GroupBox();
+            dataGrid = new DataGridView();
+            cellNum = new DataGridViewTextBoxColumn();
+            cellState = new DataGridViewTextBoxColumn();
+            workDate = new DataGridViewTextBoxColumn();
+            workTime = new DataGridViewTextBoxColumn();
             uiBox.SuspendLayout();
+            listBox.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dataGrid).BeginInit();
             SuspendLayout();
-            // 
-            // listBox
-            // 
-            listBox.Controls.Add(listView);
-            listBox.Location = new Point(4, 158);
-            listBox.Name = "listBox";
-            listBox.Size = new Size(1253, 807);
-            listBox.TabIndex = 1;
-            listBox.TabStop = false;
-            // 
-            // listView
-            // 
-            listView.BackColor = SystemColors.Window;
-            listView.BorderStyle = BorderStyle.FixedSingle;
-            listView.Columns.AddRange(new ColumnHeader[] { cellNum, cellState, dateHeader, timeHeader });
-            listView.ForeColor = SystemColors.WindowFrame;
-            listView.Location = new Point(5, 26);
-            listView.Name = "listView";
-            listView.RightToLeft = RightToLeft.No;
-            listView.Size = new Size(1241, 781);
-            listView.TabIndex = 0;
-            listView.UseCompatibleStateImageBehavior = false;
-            listView.View = View.Details;
-            // 
-            // cellState
-            // 
-            cellState.Text = "셀 상태";
-            cellState.TextAlign = HorizontalAlignment.Center;
-            cellState.Width = 826;
-            // 
-            // dateHeader
-            // 
-            dateHeader.Text = "작업 날짜";
-            dateHeader.TextAlign = HorizontalAlignment.Center;
-            dateHeader.Width = 170;
-            // 
-            // timeHeader
-            // 
-            timeHeader.Text = "작업 시간";
-            timeHeader.TextAlign = HorizontalAlignment.Center;
-            timeHeader.Width = 170;
             // 
             // uiBox
             // 
             uiBox.Controls.Add(stateTxt);
-            uiBox.Controls.Add(readBtn);
-            uiBox.Controls.Add(setResetBtn);
+            uiBox.Controls.Add(inBtn);
+            uiBox.Controls.Add(outBtn);
             uiBox.Location = new Point(9, 12);
             uiBox.Name = "uiBox";
             uiBox.Size = new Size(1241, 140);
@@ -104,32 +70,100 @@
             stateTxt.TabIndex = 1;
             stateTxt.Text = "State:";
             // 
-            // readBtn
+            // inBtn
             // 
-            readBtn.BackColor = SystemColors.HotTrack;
-            readBtn.ForeColor = Color.White;
-            readBtn.Location = new Point(1096, 20);
-            readBtn.Name = "readBtn";
-            readBtn.Size = new Size(139, 52);
-            readBtn.TabIndex = 0;
-            readBtn.Text = "Read";
-            readBtn.UseVisualStyleBackColor = false;
+            inBtn.BackColor = SystemColors.HotTrack;
+            inBtn.ForeColor = Color.White;
+            inBtn.Image = (Image)resources.GetObject("inBtn.Image");
+            inBtn.Location = new Point(1120, 13);
+            inBtn.Name = "inBtn";
+            inBtn.Size = new Size(93, 52);
+            inBtn.TabIndex = 0;
+            inBtn.Text = "입고";
+            inBtn.UseVisualStyleBackColor = false;
+            inBtn.Click += inBtn_Click;
             // 
-            // setResetBtn
+            // outBtn
             // 
-            setResetBtn.BackColor = SystemColors.HotTrack;
-            setResetBtn.ForeColor = Color.White;
-            setResetBtn.Location = new Point(1096, 82);
-            setResetBtn.Name = "setResetBtn";
-            setResetBtn.Size = new Size(139, 52);
-            setResetBtn.TabIndex = 0;
-            setResetBtn.Text = "SetReset";
-            setResetBtn.UseVisualStyleBackColor = false;
+            outBtn.BackColor = SystemColors.HotTrack;
+            outBtn.ForeColor = Color.White;
+            outBtn.Image = (Image)resources.GetObject("outBtn.Image");
+            outBtn.Location = new Point(1120, 82);
+            outBtn.Name = "outBtn";
+            outBtn.Size = new Size(93, 52);
+            outBtn.TabIndex = 0;
+            outBtn.Text = "출고";
+            outBtn.UseVisualStyleBackColor = false;
+            outBtn.Click += outBtn_Click;
+            // 
+            // listBox
+            // 
+            listBox.Controls.Add(dataGrid);
+            listBox.Location = new Point(4, 158);
+            listBox.Name = "listBox";
+            listBox.Size = new Size(1253, 807);
+            listBox.TabIndex = 1;
+            listBox.TabStop = false;
+            // 
+            // dataGrid
+            // 
+            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle6.BackColor = SystemColors.Control;
+            dataGridViewCellStyle6.Font = new Font("맑은 고딕", 9F);
+            dataGridViewCellStyle6.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle6.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle6.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle6.WrapMode = DataGridViewTriState.True;
+            dataGrid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle6;
+            dataGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGrid.Columns.AddRange(new DataGridViewColumn[] { cellNum, cellState, workDate, workTime });
+            dataGrid.Location = new Point(0, 17);
+            dataGrid.Name = "dataGrid";
+            dataGrid.RightToLeft = RightToLeft.No;
+            dataGrid.RowHeadersVisible = false;
+            dataGrid.RowHeadersWidth = 51;
+            dataGrid.Size = new Size(1249, 784);
+            dataGrid.TabIndex = 0;
             // 
             // cellNum
             // 
-            cellNum.Text = "셀 번호";
-            cellNum.Width = 70;
+            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            cellNum.DefaultCellStyle = dataGridViewCellStyle7;
+            cellNum.HeaderText = "셀 번호";
+            cellNum.MinimumWidth = 6;
+            cellNum.Name = "cellNum";
+            cellNum.ReadOnly = true;
+            cellNum.Width = 125;
+            // 
+            // cellState
+            // 
+            dataGridViewCellStyle8.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            cellState.DefaultCellStyle = dataGridViewCellStyle8;
+            cellState.HeaderText = "셀 상태";
+            cellState.MinimumWidth = 6;
+            cellState.Name = "cellState";
+            cellState.ReadOnly = true;
+            cellState.Width = 875;
+            // 
+            // workDate
+            // 
+            dataGridViewCellStyle9.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            workDate.DefaultCellStyle = dataGridViewCellStyle9;
+            workDate.HeaderText = "작업 날짜";
+            workDate.MinimumWidth = 6;
+            workDate.Name = "workDate";
+            workDate.ReadOnly = true;
+            workDate.Width = 125;
+            // 
+            // workTime
+            // 
+            dataGridViewCellStyle10.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            workTime.DefaultCellStyle = dataGridViewCellStyle10;
+            workTime.HeaderText = "작업 시간";
+            workTime.MinimumWidth = 6;
+            workTime.Name = "workTime";
+            workTime.ReadOnly = true;
+            workTime.Width = 125;
             // 
             // Form1
             // 
@@ -140,22 +174,23 @@
             Controls.Add(listBox);
             Name = "Form1";
             Text = "OPCClinet";
-            listBox.ResumeLayout(false);
             uiBox.ResumeLayout(false);
             uiBox.PerformLayout();
+            listBox.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)dataGrid).EndInit();
             ResumeLayout(false);
         }
 
         #endregion
-        private GroupBox listBox;
         private GroupBox uiBox;
-        private Button readBtn;
-        private Button setResetBtn;
+        private Button inBtn;
+        private Button outBtn;
         private TextBox stateTxt;
-        private ListView listView;
-        private ColumnHeader cellState;
-        private ColumnHeader dateHeader;
-        private ColumnHeader timeHeader;
-        private ColumnHeader cellNum;
+        private GroupBox listBox;
+        private DataGridView dataGrid;
+        private DataGridViewTextBoxColumn cellNum;
+        private DataGridViewTextBoxColumn cellState;
+        private DataGridViewTextBoxColumn workDate;
+        private DataGridViewTextBoxColumn workTime;
     }
 }
