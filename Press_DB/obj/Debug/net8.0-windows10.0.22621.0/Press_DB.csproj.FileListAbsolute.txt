@@ -28,3 +28,4 @@ C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net8.0-windows1
 C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net8.0-windows10.0.22621.0\Press_DB.pdb
 C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net8.0-windows10.0.22621.0\Press_DB.genruntimeconfig.cache
 C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net8.0-windows10.0.22621.0\ref\Press_DB.dll
+C:\Users\강재현\Documents\GitHub\SYSSystem\Press_DB\obj\Debug\net8.0-windows10.0.22621.0\Press_DB.Properties.Resources.resources

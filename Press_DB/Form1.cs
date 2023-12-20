@@ -5,6 +5,7 @@ using System.Configuration;
 using System.Data.SqlClient;
 using OPCAutomation;
 using static System.Windows.Forms.AxHost;
+using System.Diagnostics;
 
 namespace Press_DB
 {
@@ -39,12 +40,6 @@ namespace Press_DB
         // 데이터베이스 연결 문자열
         private string connectionString = ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString;
         private string opcServerIP = ConfigurationManager.AppSettings["OPCServerIP"];
-
-        // inBtn 버튼 클릭 시 0값을 보내어 InReserve 로 동작하게함
-        private void inBtn_Click(object sender, EventArgs e)
-        {
-            StartThread(0);
-        }
 
         // 스레드 시작부분
         private void StartThread(int reserve)
@@ -113,104 +108,66 @@ namespace Press_DB
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                // 데이터베이스 연결
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
-                    string cell = new string("");
-                    // 데이터 베이스 연결을 열어옴
                     connection.Open();
+                    string query = @"
+                    SELECT TOP 1
+                        tsc.Stk_no,
+                        tsc.Stk_state,
+                        tc.Cell,
+                        tc.Cell_type,
+                        tc.State
+                    FROM
+                        t_SC_state tsc
+                    LEFT JOIN
+                        t_Cell tc ON LEFT(tc.Cell, 2) = tsc.Stk_no
+                    WHERE
+                        tsc.Stk_state = 0
+                        AND tc.Cell_type >= '67111'
+                        AND tc.State = 'EMPTY'
+                    ORDER BY
+                        tsc.Stk_no DESC
+                ";
 
-                    // t_Cell 테이블에서 Cell_type 및 State 가져오기
-                    SqlCommand cmdCell = new SqlCommand("SELECT Cell_type, State, Cell FROM t_Cell", connection);
-                    // 셀 정보를 가져오기 위한 쿼리 실행
-                    SqlDataReader readerCell = cmdCell.ExecuteReader();
-
-                    // t_Cell 테이블 레코드 반복
-                    while (readerCell.Read())
+                    SqlCommand command = new SqlCommand(query, connection);
+                    SqlDataReader reader = command.ExecuteReader();
+                    while (reader.Read())
                     {
-                        // Cell_type 의 값을 가져옴
-                        string cellType = readerCell["Cell_type"].ToString();
-                        // State 의 값을 가져옴
-                        string state = readerCell["State"].ToString();
+                        int value = 67111;// Convert.ToInt32(opcItemList.Find(item => item.ItemID == "Item"));
+                        string cellType = reader["Cell_type"].ToString();
+                        string state = reader["State"].ToString();
+                        string cell = reader["Cell"].ToString();
+                        int stkState = Convert.ToInt32(reader["Stk_state"]);
 
-                        cell = Convert.ToString(readerCell["Cell"]);
-                        int value = 71112;// Convert.ToInt32(opcItemList.Find(item => item.ItemID == "Item"));
-
-                        if (!string.IsNullOrEmpty(cellType))
-                        {
-                            if (value <= Convert.ToInt32(cellType) && state == "EMPTY")
-                            {
-                                // t_Cell 리더 닫기
-                                readerCell.Close();
-                                break;
-                            }
-
-                            else if (value > int.Parse(cellType))
-                            {
-                                UpdateListView(cell, "셀 공간이 적합하지 않음");
-                            }
-
-                            else if (state != "Emtpy")
-                            {
-                                switch (state)
-                                {
-                                    case "INRUN":
-                                        UpdateListView(cell, "입고 진행 중");
-                                        break;
-                                    case "OUTRUN":
-                                        UpdateListView(cell, "출고 진행 중");
-                                        break;
-                                    case "INCOMP":
-                                        UpdateListView(cell, "입고 완료");
-                                        break;
-                                    case "OUTCOMP":
-                                        UpdateListView(cell, "출고 완료");
-                                        break;
-                                }
-                            }
-                        }
-                    }
-
-                    // t_SC_state 테이블에서 Stk_state 값 가져오기
-                    SqlCommand cmdSCState = new SqlCommand("SELECT Stk_mode FROM t_Run_mode ORDER BY Stk_no", connection);
-                    // SC_state 정보를 가져오기 위한 쿼리 실행
-                    SqlDataReader readerSCState = cmdSCState.ExecuteReader();
-
-                    // t_SC_state 테이블 레코드 반복
-                    while (readerSCState.Read())
-                    {
-                        // Stk_state 의 값을 가져옴
-                        int stkState = Convert.ToInt32(readerSCState["Stk_mode"]);
-                        //OPC 아이템 값 가져오기
-
-                        // 조건 검사 및 처리
-                        // OPC 아이템 값과 데이터베이스에서 가져온 값들을 조건으로 검사
                         if (stkState == 0)
                         {
-                            // 조건에 맞을 경우 데이터베이스에 삽입
-                            // t_SC_state 리더 닫기
-                            readerSCState.Close();
-                            break;
-                        }
-                        else
-                        {
-                            if (stkState != 1)
-                            {
-                                UpdateListView(cell, stkState + "번 크레인 Error 상태");
-                            }
+                            UpdateListView(cell, "정상 입고", "정상", DateTime.Now.ToString("yyyy-MM-dd"),DateTime.Now.ToString("hh:mm:ss"));
                         }
                     }
 
-                    UpdateListView(cell, "데이터 정상 저장");
-                    //InsertToDatabase(connection, cell);
+                    reader.Close();
+
+                    opcThread.Join();
                 }
             }
         }
 
-        void UpdateListView(string numCell, string stateCell)
+        void UpdateListView(string cell, string cellState, string scState, string Date, string Time)
         {
-            // ListView 업데이트 등 UI 작업 수행
-            dataGrid.Rows.Add(stateCell, stateCell, DateTime.Now);
+            // UI 스레드가 아닌 경우, UI 스레드에서 작업하도록 요청
+            if (dataGrid.InvokeRequired)
+            {
+                dataGrid.Invoke((MethodInvoker)delegate {
+                    // 데이터 그리드에 새로운 행 추가
+                    dataGrid.Rows.Add(cell, cellState, scState, Date, Time);
+                });
+            }
+            else // UI 스레드인 경우, 직접 작업 수행
+            {
+                // 데이터 그리드에 새로운 행 추가
+                dataGrid.Rows.Add(cell, cellState, scState, Date, Time);
+            }
         }
 
         private void InsertToDatabase(SqlConnection connection, string cell)
@@ -269,9 +226,9 @@ namespace Press_DB
             }
         }
 
-        private void outBtn_Click(object sender, EventArgs e)
+        private void inBtn_Click(object sender, EventArgs e)
         {
-
+            StartThread(0);
         }
     }
 }
