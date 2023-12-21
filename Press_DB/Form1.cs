@@ -195,7 +195,59 @@ namespace Press_DB
 
         private void OutReserveData(CancellationToken cancellationToken)
         {
+            /*
 
+           // OPC 아이템 추가
+           opcItemList.Add(opcItems.AddItem("PLT_CODE", 1));
+           */
+            
+            testitem.Add("PLT_CODE");
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+                    string Code = opcItemList.Find(pltCode => pltCode.ItemID == "PLT_CODE").ToString();
+                    string query = @"
+                    SELECT TOP 1
+                        tsc.Stk_no,
+                        tsc.Stk_state,
+                        tc.Cell,
+                        tc.Cell_type,
+                        tc.State
+                    FROM
+                        t_SC_state tsc
+                    LEFT JOIN
+                        t_Cell tc ON LEFT(tc.Cell, 2) = tsc.Stk_no
+                    WHERE
+                        tsc.Stk_state = 0
+                        AND tc.Cell_type >= '67111'
+                        AND tc.State = 'INCOMP'
+                    ORDER BY
+                        tsc.Stk_no DESC
+                ";
+
+                    SqlCommand command = new SqlCommand(query, connection);
+                    SqlDataReader reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        string cellType = reader["Cell_type"].ToString();
+                        string state = reader["State"].ToString();
+                        string cell = reader["Cell"].ToString();
+                        int stkState = Convert.ToInt32(reader["Stk_state"]);
+
+                        if (stkState == 0)
+                        {
+                            UpdateListView(cell, "정상 입고", "정상", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("hh:mm:ss"));
+                        }
+                    }
+
+                    reader.Close();
+
+                    opcThread.Join();
+                }
+            }
         }
 
         // 스레드 종료 메서드
