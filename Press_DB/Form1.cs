@@ -49,20 +49,14 @@ namespace Press_DB
 
             // CancellationTokenSource에서 Token 가져오기
             CancellationToken cancellationToken = cancellationTokenSource.Token;
-
-
-            if (reserve == 0)
-            {
-                // 스레드 시작
-                opcThread = new Thread(() => inReserveData(cancellationToken));
-                opcThread.Start();
-            }
+            
+            // 스레드 시작
+            opcThread = new Thread(() => opcServerJoin(reserve, cancellationToken));
+            opcThread.Start();
         }
 
-        // OPC 서버 연결 및 데이터 수집 메서드
-        private void inReserveData(CancellationToken cancellationToken)
+        private void opcServerJoin(int reserve, CancellationToken cancellationToken)
         {
-            /*
             // OPC 서버 연결
             opcServer = new OPCServer();
             // OPC 서버에 연결
@@ -79,38 +73,45 @@ namespace Press_DB
             // OPC 아이템들을 관리하는 객체를 가져옴
             opcItems = opcGroup.OPCItems;
 
+            // reserve 값이 0 일시 입고 함수 처리
+            if (reserve == 0)
+            {
+                InReserveData(cancellationToken);
+            }
+            // reserve 값이 1 일시 출고 함수 처리
+            else if (reserve == 1)
+            {
 
+            }
+        }
+
+        // OPC 서버 연결 및 데이터 수집 메서드
+        private void InReserveData(CancellationToken cancellationToken)
+        {
+            /*
+            
             // OPC 아이템 추가
             opcItemList.Add(opcItems.AddItem("PLT_IN_OUT", 1));
             opcItemList.Add(opcItems.AddItem("Job_Line", 1));
             opcItemList.Add(opcItems.AddItem("Serial_No", 1));
             opcItemList.Add(opcItems.AddItem("PLT_Number", 1));
-            opcItemList.Add(opcItems.AddItem("PLT_TYPE", 1));
-            opcItemList.Add(opcItems.AddItem("Car_Type", 1));
-            opcItemList.Add(opcItems.AddItem("Item", 1));
-            opcItemList.Add(opcItems.AddItem("Spec", 1));
-            opcItemList.Add(opcItems.AddItem("LINE", 1));
-            opcItemList.Add(opcItems.AddItem("Parts_count_int_pallet", 1));
-            opcItemList.Add(opcItems.AddItem("Counts", 1));
+            opcItemList.Add(opcItems.AddItem("PLT_CODE", 1));
+            opcItemList.Add(opcItems.AddItem("Parts_count_in_pallet", 1));
             */
 
             testitem.Add("PLT_IN_OUT");
             testitem.Add("Job_Line");
             testitem.Add("Serial_No");
             testitem.Add("PLT_Number");
-            testitem.Add("PLT_TYPE");
-            testitem.Add("Car_Type");
-            testitem.Add("Item");
-            testitem.Add("Spec");
-            testitem.Add("LINE");
-            testitem.Add("Parts_count_int_pallet");
-            testitem.Add("Counts");
+            testitem.Add("PLT_CODE");
+            testitem.Add("Parts_count_in_pallet");
 
             while (!cancellationToken.IsCancellationRequested)
             {
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
+                    string Code = opcItemList.Find(pltCode => pltCode.ItemID == "PLT_CODE").ToString();
                     string query = @"
                     SELECT TOP 1
                         tsc.Stk_no,
@@ -134,7 +135,6 @@ namespace Press_DB
                     SqlDataReader reader = command.ExecuteReader();
                     while (reader.Read())
                     {
-                        int value = 67111;// Convert.ToInt32(opcItemList.Find(item => item.ItemID == "Item"));
                         string cellType = reader["Cell_type"].ToString();
                         string state = reader["State"].ToString();
                         string cell = reader["Cell"].ToString();
@@ -153,23 +153,6 @@ namespace Press_DB
             }
         }
 
-        void UpdateListView(string cell, string cellState, string scState, string Date, string Time)
-        {
-            // UI 스레드가 아닌 경우, UI 스레드에서 작업하도록 요청
-            if (dataGrid.InvokeRequired)
-            {
-                dataGrid.Invoke((MethodInvoker)delegate {
-                    // 데이터 그리드에 새로운 행 추가
-                    dataGrid.Rows.Add(cell, cellState, scState, Date, Time);
-                });
-            }
-            else // UI 스레드인 경우, 직접 작업 수행
-            {
-                // 데이터 그리드에 새로운 행 추가
-                dataGrid.Rows.Add(cell, cellState, scState, Date, Time);
-            }
-        }
-
         private void InsertToDatabase(SqlConnection connection, string cell)
         {
             // 아이템 이름과 값의 딕셔너리 생성
@@ -181,17 +164,12 @@ namespace Press_DB
             itemValues["Job_Line"] = opcItemList.Find(item => item.ItemID == "Job_Line")?.Value;
             itemValues["Serial_No"] = opcItemList.Find(item => item.ItemID == "Serial_No")?.Value;
             itemValues["PLT_Number"] = opcItemList.Find(item => item.ItemID == "PLT_Number")?.Value;
-            itemValues["PLT_TYPE"] = opcItemList.Find(item => item.ItemID == "PLT_TYPE")?.Value;
-            itemValues["Car_Type"] = opcItemList.Find(item => item.ItemID == "Car_Type")?.Value;
-            itemValues["Item"] = opcItemList.Find(item => item.ItemID == "Item")?.Value;
-            itemValues["Spec"] = opcItemList.Find(item => item.ItemID == "Spec")?.Value;
-            itemValues["LINE"] = opcItemList.Find(item => item.ItemID == "LINE")?.Value;
-            itemValues["Parts_count_int_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_int_pallet")?.Value;
-            itemValues["Counts"] = opcItemList.Find(item => item.ItemID == "Counts")?.Value;
+            itemValues["PLT_CODE"] = opcItemList.Find(item => item.ItemID == "PLT_CODE")?.Value;
+            itemValues["Parts_count_in_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_in_pallet")?.Value;
 
             // t_In_reserve 테이블에 데이터 삽입
-            string insertQuery = "INSERT INTO t_In_reserve (Cell, PLT_IN_OUT, Job_Line, Serial_No, PLT_Number, PLT_TYPE, Car_Type, Item, Spec, LINE, Parts_count_int_pallet, Counts)" +
-                                 "VALUES (@Cell, @PLT_IN_OUT, @Job_Line, @Serial_No, @PLT_Number, @PLT_TYPE, @Car_Type, @Item, @Spec, @LINE, @Parts_count_int_pallet, @Counts)";
+            string insertQuery = "INSERT INTO t_In_reserve (Cell, PLT_IN_OUT, Job_Line, Serial_No, PLT_Number, PLT_CODE, Parts_count_in_pallet)" +
+                                 "VALUES (@Cell, @PLT_IN_OUT, @Job_Line, @Serial_No, @PLT_Number, @PLT_CODE, @Parts_count_in_pallet)";
 
             SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
 
@@ -215,6 +193,11 @@ namespace Press_DB
             StopThread();
         }
 
+        private void OutReserveData(CancellationToken cancellationToken)
+        {
+
+        }
+
         // 스레드 종료 메서드
         private void StopThread()
         {
@@ -223,6 +206,23 @@ namespace Press_DB
             {
                 // 스레드 종료 요청
                 cancellationTokenSource.Cancel();
+            }
+        }
+
+        void UpdateListView(string cell, string cellState, string scState, string Date, string Time)
+        {
+            // UI 스레드가 아닌 경우, UI 스레드에서 작업하도록 요청
+            if (dataGrid.InvokeRequired)
+            {
+                dataGrid.Invoke((MethodInvoker)delegate {
+                    // 데이터 그리드에 새로운 행 추가
+                    dataGrid.Rows.Add(cell, cellState, scState, Date, Time);
+                });
+            }
+            else // UI 스레드인 경우, 직접 작업 수행
+            {
+                // 데이터 그리드에 새로운 행 추가
+                dataGrid.Rows.Add(cell, cellState, scState, Date, Time);
             }
         }
 
