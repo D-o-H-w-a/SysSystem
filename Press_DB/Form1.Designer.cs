@@ -28,57 +28,50 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
-            uiBox = new GroupBox();
-            stateTxt = new TextBox();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            OPCstateTxt = new TextBox();
             inBtn = new Button();
             outBtn = new Button();
+            SQLstateTxt = new TextBox();
             listBox = new GroupBox();
             dataGrid = new DataGridView();
-            cellNum = new DataGridViewTextBoxColumn();
-            cellState = new DataGridViewTextBoxColumn();
-            scState = new DataGridViewTextBoxColumn();
-            workDate = new DataGridViewTextBoxColumn();
+            groupBox = new GroupBox();
             workTime = new DataGridViewTextBoxColumn();
-            uiBox.SuspendLayout();
+            workDate = new DataGridViewTextBoxColumn();
+            scState = new DataGridViewTextBoxColumn();
+            cellState = new DataGridViewTextBoxColumn();
+            cellNum = new DataGridViewTextBoxColumn();
             listBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGrid).BeginInit();
+            groupBox.SuspendLayout();
             SuspendLayout();
             // 
-            // uiBox
+            // OPCstateTxt
             // 
-            uiBox.Controls.Add(stateTxt);
-            uiBox.Controls.Add(inBtn);
-            uiBox.Controls.Add(outBtn);
-            uiBox.Location = new Point(9, 12);
-            uiBox.Name = "uiBox";
-            uiBox.Size = new Size(1241, 140);
-            uiBox.TabIndex = 2;
-            uiBox.TabStop = false;
-            // 
-            // stateTxt
-            // 
-            stateTxt.BorderStyle = BorderStyle.None;
-            stateTxt.Location = new Point(533, 104);
-            stateTxt.Name = "stateTxt";
-            stateTxt.ReadOnly = true;
-            stateTxt.Size = new Size(154, 20);
-            stateTxt.TabIndex = 1;
-            stateTxt.Text = "State:";
+            OPCstateTxt.BackColor = SystemColors.ActiveCaption;
+            OPCstateTxt.BorderStyle = BorderStyle.None;
+            OPCstateTxt.Font = new Font("맑은 고딕", 10.8F);
+            OPCstateTxt.Location = new Point(130, 100);
+            OPCstateTxt.Name = "OPCstateTxt";
+            OPCstateTxt.ReadOnly = true;
+            OPCstateTxt.Size = new Size(164, 24);
+            OPCstateTxt.TabIndex = 1;
+            OPCstateTxt.Text = "OPC Comm Status";
             // 
             // inBtn
             // 
             inBtn.BackColor = SystemColors.HotTrack;
+            inBtn.Font = new Font("맑은 고딕", 9F);
             inBtn.ForeColor = Color.White;
-            inBtn.Image = (Image)resources.GetObject("inBtn.Image");
-            inBtn.Location = new Point(1120, 13);
+            inBtn.Location = new Point(210, 28);
             inBtn.Name = "inBtn";
-            inBtn.Size = new Size(93, 52);
+            inBtn.Size = new Size(84, 52);
             inBtn.TabIndex = 0;
             inBtn.Text = "입고";
             inBtn.UseVisualStyleBackColor = false;
@@ -87,26 +80,40 @@
             // outBtn
             // 
             outBtn.BackColor = SystemColors.HotTrack;
+            outBtn.Font = new Font("맑은 고딕", 9F);
             outBtn.ForeColor = Color.White;
-            outBtn.Image = (Image)resources.GetObject("outBtn.Image");
-            outBtn.Location = new Point(1120, 82);
+            outBtn.Location = new Point(422, 28);
             outBtn.Name = "outBtn";
-            outBtn.Size = new Size(93, 52);
+            outBtn.Size = new Size(84, 52);
             outBtn.TabIndex = 0;
             outBtn.Text = "출고";
             outBtn.UseVisualStyleBackColor = false;
+            outBtn.Click += outBtn_Click;
+            // 
+            // SQLstateTxt
+            // 
+            SQLstateTxt.BackColor = SystemColors.ActiveCaption;
+            SQLstateTxt.BorderStyle = BorderStyle.None;
+            SQLstateTxt.Font = new Font("맑은 고딕", 10.8F);
+            SQLstateTxt.Location = new Point(422, 100);
+            SQLstateTxt.Name = "SQLstateTxt";
+            SQLstateTxt.ReadOnly = true;
+            SQLstateTxt.Size = new Size(164, 24);
+            SQLstateTxt.TabIndex = 1;
+            SQLstateTxt.Text = "SQL Comm Status";
             // 
             // listBox
             // 
             listBox.Controls.Add(dataGrid);
-            listBox.Location = new Point(4, 158);
+            listBox.Location = new Point(9, 158);
             listBox.Name = "listBox";
-            listBox.Size = new Size(1253, 807);
+            listBox.Size = new Size(761, 383);
             listBox.TabIndex = 1;
             listBox.TabStop = false;
             // 
             // dataGrid
             // 
+            dataGrid.BackgroundColor = Color.FromArgb(191, 205, 218);
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dataGridViewCellStyle1.BackColor = SystemColors.Control;
             dataGridViewCellStyle1.Font = new Font("맑은 고딕", 9F);
@@ -117,23 +124,67 @@
             dataGrid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dataGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGrid.Columns.AddRange(new DataGridViewColumn[] { cellNum, cellState, scState, workDate, workTime });
-            dataGrid.Location = new Point(0, 17);
+            dataGrid.EnableHeadersVisualStyles = false;
+            dataGrid.Location = new Point(6, 26);
             dataGrid.Name = "dataGrid";
+            dataGrid.ReadOnly = true;
             dataGrid.RightToLeft = RightToLeft.No;
+            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle7.BackColor = SystemColors.Control;
+            dataGridViewCellStyle7.Font = new Font("맑은 고딕", 9F);
+            dataGridViewCellStyle7.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle7.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle7.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle7.WrapMode = DataGridViewTriState.True;
+            dataGrid.RowHeadersDefaultCellStyle = dataGridViewCellStyle7;
             dataGrid.RowHeadersVisible = false;
             dataGrid.RowHeadersWidth = 51;
-            dataGrid.Size = new Size(1249, 784);
+            dataGrid.Size = new Size(755, 351);
             dataGrid.TabIndex = 0;
             // 
-            // cellNum
+            // groupBox
             // 
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            cellNum.DefaultCellStyle = dataGridViewCellStyle2;
-            cellNum.HeaderText = "셀 번호";
-            cellNum.MinimumWidth = 6;
-            cellNum.Name = "cellNum";
-            cellNum.ReadOnly = true;
-            cellNum.Width = 125;
+            groupBox.BackColor = SystemColors.ActiveCaption;
+            groupBox.Controls.Add(OPCstateTxt);
+            groupBox.Controls.Add(inBtn);
+            groupBox.Controls.Add(outBtn);
+            groupBox.Controls.Add(SQLstateTxt);
+            groupBox.Font = new Font("맑은 고딕", 1F);
+            groupBox.Location = new Point(15, 8);
+            groupBox.Name = "groupBox";
+            groupBox.Size = new Size(755, 172);
+            groupBox.TabIndex = 2;
+            groupBox.TabStop = false;
+            // 
+            // workTime
+            // 
+            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            workTime.DefaultCellStyle = dataGridViewCellStyle6;
+            workTime.HeaderText = "작업 시간";
+            workTime.MinimumWidth = 6;
+            workTime.Name = "workTime";
+            workTime.ReadOnly = true;
+            workTime.Width = 157;
+            // 
+            // workDate
+            // 
+            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            workDate.DefaultCellStyle = dataGridViewCellStyle5;
+            workDate.HeaderText = "작업 날짜";
+            workDate.MinimumWidth = 6;
+            workDate.Name = "workDate";
+            workDate.ReadOnly = true;
+            workDate.Width = 158;
+            // 
+            // scState
+            // 
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            scState.DefaultCellStyle = dataGridViewCellStyle4;
+            scState.HeaderText = "크레인 상태";
+            scState.MinimumWidth = 6;
+            scState.Name = "scState";
+            scState.ReadOnly = true;
+            scState.Width = 157;
             // 
             // cellState
             // 
@@ -143,59 +194,43 @@
             cellState.MinimumWidth = 6;
             cellState.Name = "cellState";
             cellState.ReadOnly = true;
-            cellState.Width = 750;
+            cellState.Width = 158;
             // 
-            // scState
+            // cellNum
             // 
-            scState.HeaderText = "크레인 상태";
-            scState.MinimumWidth = 6;
-            scState.Name = "scState";
-            scState.ReadOnly = true;
-            scState.Width = 125;
-            // 
-            // workDate
-            // 
-            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            workDate.DefaultCellStyle = dataGridViewCellStyle4;
-            workDate.HeaderText = "작업 날짜";
-            workDate.MinimumWidth = 6;
-            workDate.Name = "workDate";
-            workDate.ReadOnly = true;
-            workDate.Width = 123;
-            // 
-            // workTime
-            // 
-            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            workTime.DefaultCellStyle = dataGridViewCellStyle5;
-            workTime.HeaderText = "작업 시간";
-            workTime.MinimumWidth = 6;
-            workTime.Name = "workTime";
-            workTime.ReadOnly = true;
-            workTime.Width = 123;
+            cellNum.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            cellNum.DefaultCellStyle = dataGridViewCellStyle2;
+            cellNum.HeaderText = "셀 번호";
+            cellNum.MinimumWidth = 6;
+            cellNum.Name = "cellNum";
+            cellNum.ReadOnly = true;
+            cellNum.Width = 122;
             // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(9F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1262, 977);
-            Controls.Add(uiBox);
+            ClientSize = new Size(782, 553);
+            Controls.Add(groupBox);
             Controls.Add(listBox);
             Name = "Form1";
             Text = "OPCClinet";
-            uiBox.ResumeLayout(false);
-            uiBox.PerformLayout();
             listBox.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dataGrid).EndInit();
+            groupBox.ResumeLayout(false);
+            groupBox.PerformLayout();
             ResumeLayout(false);
         }
 
         #endregion
-        private GroupBox uiBox;
         private Button inBtn;
         private Button outBtn;
-        private TextBox stateTxt;
+        private TextBox OPCstateTxt;
         private GroupBox listBox;
         private DataGridView dataGrid;
+        private TextBox SQLstateTxt;
+        private GroupBox groupBox;
         private DataGridViewTextBoxColumn cellNum;
         private DataGridViewTextBoxColumn cellState;
         private DataGridViewTextBoxColumn scState;
