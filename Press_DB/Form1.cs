@@ -52,31 +52,30 @@ namespace Press_DB
             // 스레드 시작
             opcThread = new Thread(() => opcServerJoin(reserve, cancellationToken));
             opcThread.Start();
+
         }
 
         // opc 서버와 연결하여 통신을 하며 아이템 객체들을 가져옴
         private void opcServerJoin( int reserve ,CancellationToken cancellationToken)
         {
+            // OPC 서버 연결
+            opcServer = new OPCServer();
+            // OPC 서버에 연결
+            opcServer.Connect(opcServerIP);
+
+            // OPC 그룹 생성 및 설정
+            opcGroups = opcServer.OPCGroups; // opc 서버에서 그룹을 관리하는 객체를 가져옴
+                                             // 이름에 맞는 OPC 그룹을 생성
+            opcGroup = opcGroups.Add("YourGroup");
+            // OPC 그룹을 활성화
+            opcGroup.IsActive = true;
+            // OPC 그룹을 구독 모드로 설정하여 실시간 데이터 수집
+            opcGroup.IsSubscribed = true;
+            // OPC 아이템들을 관리하는 객체를 가져옴
+            opcItems = opcGroup.OPCItems;
+
             while (!cancellationToken.IsCancellationRequested)
             {
-                /*
-                // OPC 서버 연결
-                opcServer = new OPCServer();
-                // OPC 서버에 연결
-                opcServer.Connect(opcServerIP);
-
-                // OPC 그룹 생성 및 설정
-                opcGroups = opcServer.OPCGroups; // opc 서버에서 그룹을 관리하는 객체를 가져옴
-                // 이름에 맞는 OPC 그룹을 생성
-                opcGroup = opcGroups.Add("YourGroup");
-                // OPC 그룹을 활성화
-                opcGroup.IsActive = true;
-                // OPC 그룹을 구독 모드로 설정하여 실시간 데이터 수집
-                opcGroup.IsSubscribed = true;
-                // OPC 아이템들을 관리하는 객체를 가져옴
-                opcItems = opcGroup.OPCItems;
-                */
-
                 /*
                 // item 사용
                 opcItemList.Add(opcItems.AddItem("PLT_IN_OUT", 1));
@@ -102,6 +101,25 @@ namespace Press_DB
                 opcItemList.Add(opcItems.AddItem("PLT_CODE", 1));
                 opcItemList.Add(opcItems.AddItem("Parts_count_in_pallet", 1));
                 */
+
+                // 각각의 아이템에 대해 데이터 읽기
+                foreach (OPCItem opcItem in opcItemList)
+                {
+                    object value;
+                    object quality;
+                    object timestamp;
+                    opcItem.Read(1, out value, out quality, out timestamp);
+
+                    // 데이터 확인
+                    //if (value != null)
+                    //{
+                    //    MessageBox.Show("데이터를 성공적으로 받았습니다: " + value.ToString());
+                    //}
+                    //else
+                    //{
+                    //    MessageBox.Show("데이터를 받지 못했습니다.");
+                    //}
+                }
 
                 string callNum = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
 
@@ -145,27 +163,40 @@ namespace Press_DB
 
                     SQLstateTxt.ForeColor = Color.Blue;
 
-                    //string code = opcItemList.Find(pltCode => pltCode.ItemID == "PLT_CODE").ToString();
-                    //char codeFirstChar = code.FirstOrDefault();
+                    /*
+                    string code = opcItemList.Find(pltCode => pltCode.ItemID == "PLT_CODE").ToString();
+                    char codeFirstChar = code.FirstOrDefault()
 
-                    /*                   string query = @"
-                                       SELECT TOP 1
-                                           tsc.Stk_no,
-                                           tsc.Stk_state,
-                                           tc.Cell,
-                                           tc.State,
-                                           tc.PLT_CODE
-                                       FROM
-                                           t_SC_state tsc
-                                       LEFT JOIN
-                                           t_Cell tc ON (tc.Bank = tsc.Stk_no * 2 - 1 OR tc.Bank = tsc.Stk_no * 2)
-                                       WHERE
-                                           tsc.Stk_state = 0
-                                           AND tc.LEFT(tc.PLT_CODE, 1) >= @codeFirstChar
-                                           AND tc.State = 'EMPTY'
-                                       ORDER BY
-                                           tsc.Stk_no DESC
-                                   ";
+                    string query = @"
+                    DECLARE @maxStkNo INT;
+                     
+                    SELECT
+                         @maxStkNo = MAX(Stk_no)
+                    FROM 
+                        t_SC_state
+                    SELECT TOP 1
+                        tsc.Stk_no,
+                        tsc.Stk_state,
+                        tc.Bank,
+                        tc.PLT_CODE
+                        tc.State,
+                        tc.Cell
+                    FROM
+                        t_SC_state tsc
+                    LEFT JOIN
+                        t_Cell tc ON (tc.Bank = tsc.Stk_no * 2 - 1 OR tc.Bank = tsc.Stk_no * 2)
+                    WHERE
+                        tsc.Stk_state = 0
+                        AND tc.LEFT(tc.PLT_CODE, 1) >= @codeFirstChar
+                        AND tc.State = 'EMPTY'
+                        AND tc.Cell NOT IN (SELECT Cell FROM t_In_reserve) -- t_In_reserve 에 tc.Cell 과 같은 Cell 존재하지 않는 것만 검색합니다.
+                        AND (
+                        (tsc.Stk_no >= @lastSearchValue AND tsc.Stk_no <= @maxStkNo) -- 이전 검색값 이상, 최대 값 이하인 값들을 검색합니다.
+                        OR (tsc.Stk_no <= @lastSearchValue) -- 마지막 검색값 이하인 값들을 검색합니다.
+                        )
+                    ORDER BY
+                        tsc.Stk_no DESC
+                    ";
                     */
 
                     string query = @"
@@ -199,11 +230,11 @@ namespace Press_DB
                         tsc.Stk_no DESC
                     ";
 
-                    //string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
+                    string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
 
                     SqlCommand command = new SqlCommand(query, connection);
                     command.Parameters.AddWithValue("@lastSearchValue", lastSearchValue);
-                    //command.Parameters.AddWithValue("@item", item);
+                    command.Parameters.AddWithValue("@item", item);
                     SqlDataReader reader = command.ExecuteReader();
                     while (reader.Read())
                     {
@@ -218,10 +249,9 @@ namespace Press_DB
                         {
                             UpdateListView(cell, "정상 입고", "정상", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                         }
-                        //InsertToDatabase(connection, 0, itemValues);
+                        Inreserve(connection);
                     }
                     reader.Close();
-                    opcThread.Join();
                 }
 
                 catch (Exception ex)
@@ -255,10 +285,51 @@ namespace Press_DB
             {
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
-                    //string Item = itemValues["Item"].ToString();
                     connection.Open();
                     //string Code = opcItemList.Find(pltCode => pltCode.ItemID == "PLT_CODE").ToString();
-                    //string Code = opcItemList.Find(pltCode => pltCode.ItemID == "item").ToString();
+                    /*
+                    string query = @"
+                    DECLARE @maxStkNo INT;
+                     
+                    SELECT
+                         @maxStkNo = MAX(Stk_no)
+                    FROM 
+                        t_SC_state
+                    SELECT TOP 1
+                        tsc.Stk_no,
+                        tsc.Stk_state,
+                        tc.Cell,
+                        tc.Pal_code,
+                        tc.State,
+                        tc.Pal_no,
+                        tc.Pal_type,
+                        tc.Model,
+                        tc.Spec,
+                        tc.Line,
+                        tc.Qty,
+                        tc.Max_qty,
+                        tc.Quality,
+                        tc.Prod_date,
+                        tc.Prod_time,
+                        tc.Pos
+                    FROM
+                        t_SC_state tsc
+                    LEFT JOIN
+                        t_Cell tc ON (tc.Bank = tsc.Stk_no * 2 - 1 OR tc.Bank = tsc.Stk_no * 2)
+                    WHERE
+                        tsc.Stk_state = 0
+                        AND tc.Pal_code = @Code
+                        AND tc.State = 'INCOMP'
+                        AND tc.Cell NOT IN (SELECT Cell FROM t_Out_reserve) -- t_Out_reserve 에 tc.Cell 과 같은 Cell 존재하지 않는 것만 검색합니다.
+                        AND (
+                        (tsc.Stk_no >= @lastSearchValue AND tsc.Stk_no <= @maxStkNo) -- 이전 검색값 이상, 최대 값 이하인 값들을 검색합니다.
+                        OR (tsc.Stk_no <= @lastSearchValue) -- 마지막 검색값 이하인 값들을 검색합니다.
+                        )
+                    ORDER BY
+                        tsc.Stk_no DESC
+                ";
+                    */
+                    ;
                     string query = @"
                     DECLARE @maxStkNo INT;
                      
@@ -299,11 +370,12 @@ namespace Press_DB
                     ORDER BY
                         tsc.Stk_no DESC
                 ";
-                    //string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
+                    
+                    string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
 
                     SqlCommand command = new SqlCommand(query, connection);
                     command.Parameters.AddWithValue("@lastSearchValue", lastSearchValue);
-                    //command.Parameters.AddWithValue("@item", item);
+                    command.Parameters.AddWithValue("@item", item);
                     SqlDataReader reader = command.ExecuteReader();
                     while (reader.Read())
                     {
@@ -317,38 +389,37 @@ namespace Press_DB
                     }
                     reader.Close();
 
-                    //InsertToDatabase(connection, 1, itemValues);
+                    OutReserve(connection);
                 }
             }
         }
 
-        private void InsertToDatabase(SqlConnection connection, int insert, Dictionary<string, object> itemValues)
+        private void Inreserve(SqlConnection connection)
         {
-            // insert 가 0 이면 Inreserv 에 데이터 삽입
-            if (insert == 0)
-            {
-                // 각 아이템의 값을 딕셔너리에 추가
-                /*
-                itemValues["Cell"] = cell;
-                itemValues["PLT_IN_OUT"] = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
-                itemValues["Job_Line"] = opcItemList.Find(item => item.ItemID == "Job_Line")?.Value;
-                itemValues["Serial_No"] = opcItemList.Find(item => item.ItemID == "Serial_No")?.Value;
-                itemValues["PLT_Number"] = opcItemList.Find(item => item.ItemID == "PLT_Number")?.Value;
-                itemValues["PLT_TYPE"] = opcItemList.Find(item => item.ItemID == "PLT_TYPE")?.Value;
-                itemValues["Car_Type"] = opcItemList.Find(item => item.ItemID == "Car_Type")?.Value;
-                itemValues["Item"] = opcItemList.Find(item => item.ItemID == "Item")?.Value;
-                itemValues["Spec"] = opcItemList.Find(item => item.ItemID == "Spec")?.Value;
-                itemValues["LINE"] = opcItemList.Find(item => item.ItemID == "LINE")?.Value;
-                itemValues["Parts_count_int_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_in_pallet")?.Value;
-                itemValues["Counts"] = opcItemList.Find(item => item.ItemID == "Counts")?.Value;
-                */
+            Dictionary<string, object> itemValues = new Dictionary<string, object>();
 
-                // itemValues["PLT_CODE"] = opcItemList.Find(item => item.ItemID == "PLT_CODE")?.Value;
-                // itemValues["Parts_count_in_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_in_pallet")?.Value;
+            // 각 아이템의 값을 딕셔너리에 추가
+            /*
+            itemValues["Cell"] = cell;
+            itemValues["PLT_IN_OUT"] = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
+            itemValues["Job_Line"] = opcItemList.Find(item => item.ItemID == "Job_Line")?.Value;
+            itemValues["Serial_No"] = opcItemList.Find(item => item.ItemID == "Serial_No")?.Value;
+            itemValues["PLT_Number"] = opcItemList.Find(item => item.ItemID == "PLT_Number")?.Value;
+            itemValues["PLT_TYPE"] = opcItemList.Find(item => item.ItemID == "PLT_TYPE")?.Value;
+            itemValues["Car_Type"] = opcItemList.Find(item => item.ItemID == "Car_Type")?.Value;
+            itemValues["Item"] = opcItemList.Find(item => item.ItemID == "Item")?.Value;
+            itemValues["Spec"] = opcItemList.Find(item => item.ItemID == "Spec")?.Value;
+            itemValues["LINE"] = opcItemList.Find(item => item.ItemID == "LINE")?.Value;
+            itemValues["Parts_count_int_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_in_pallet")?.Value;
+            itemValues["Counts"] = opcItemList.Find(item => item.ItemID == "Counts")?.Value;
+            */
 
-                // t_In_reserve 테이블에 데이터 삽입
+            // itemValues["PLT_CODE"] = opcItemList.Find(item => item.ItemID == "PLT_CODE")?.Value;
+            // itemValues["Parts_count_in_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_in_pallet")?.Value;
 
-                string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
+            // t_In_reserve 테이블에 데이터 삽입
+
+            string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
                                 "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, '', @Item, @Spec, @Line, '', @Max_qty, '', '', '', @State, '', @Udate, @Utime)";
                 /* PLT_CODE 처리
                  * string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
@@ -370,32 +441,33 @@ namespace Press_DB
 
                 // 쿼리 실행
                 cmdInsert.ExecuteNonQuery();
-            }
+            // 데이터베이스 연결 닫기
+            connection.Close();
+        }
 
-            // insert 가 1 이면 outreserv 에 데이터 삽입
-            else if (insert == 1)
+        private void OutReserve(SqlConnection connection)
+        {
+            Dictionary<string, object> itemValues = new Dictionary<string, object>();
+            // itemValues["PLT_CODE"] = opcItemList.Find(item => item.ItemID == "PLT_CODE")?.Value;
+
+            // t_out_reserve 테이블에 데이터 삽입
+            string insertQuery = "INSERT INTO t_out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
+                            "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, @Model, @Item, @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_date, @Prod_time, @State, @Pos, @Udate, @Utime)";
+
+            /* PLT_CODE 처리
+             * string insertQuery = "INSERT INTO t_out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Parod_time, State, Pos, Udate, Utime)" +
+                            "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, @Model, @Item, @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_date, @Prod_time, @State, @Pos, @Udate, @Utime)";
+            */
+            SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
+
+            // 딕셔너리의 값들을 SQL 매개변수에 추가
+            foreach (var kvp in itemValues)
             {
-                // itemValues["PLT_CODE"] = opcItemList.Find(item => item.ItemID == "PLT_CODE")?.Value;
-
-                // t_out_reserve 테이블에 데이터 삽입
-                string insertQuery = "INSERT INTO t_out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
-                                "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, @Model, @Item, @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_date, @Prod_time, @State, @Pos, @Udate, @Utime)";
-
-                /* PLT_CODE 처리
-                 * string insertQuery = "INSERT INTO t_out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Parod_time, State, Pos, Udate, Utime)" +
-                                "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, @Model, @Item, @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_date, @Prod_time, @State, @Pos, @Udate, @Utime)";
-                */
-                SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
-
-                // 딕셔너리의 값들을 SQL 매개변수에 추가
-                foreach (var kvp in itemValues)
-                {
-                    cmdInsert.Parameters.AddWithValue("@" + kvp.Key, kvp.Value ?? DBNull.Value);
-                }
-
-                // 쿼리 실행
-                cmdInsert.ExecuteNonQuery();
+                cmdInsert.Parameters.AddWithValue("@" + kvp.Key, kvp.Value ?? DBNull.Value);
             }
+
+            // 쿼리 실행
+            cmdInsert.ExecuteNonQuery();
             // 데이터베이스 연결 닫기
             connection.Close();
         }
