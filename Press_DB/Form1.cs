@@ -25,9 +25,8 @@ namespace Press_DB
         private Thread opcThread;
         // 스레드를 중지시키는데 사용되는 토큰을 생성하는 CancellationTokenSource
         private CancellationTokenSource cancellationTokenSource;
-
-        // 데이터베이스 테스트용
-        private List<object> testitem = new List<object>();
+        // opc item 값을 담아올 List  변수 선언
+        private List<OPCItem> opcItemList = new List<OPCItem>();
 
         public Form1()
         {
@@ -49,132 +48,111 @@ namespace Press_DB
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
             // 스레드 시작
-            opcThread = new Thread(() => opcServerJoin(reserve, cancellationToken));
+            opcThread = new Thread(() => opcServerJoin(cancellationToken));
             opcThread.Start();
         }
 
-        private void opcServerJoin(int reserve, CancellationToken cancellationToken)
+        // opc 서버와 연결하여 통신을 하며 아이템 객체들을 가져옴
+        private void opcServerJoin( CancellationToken cancellationToken)
         {
-            /*
-            // OPC 서버 연결
-            opcServer = new OPCServer();
-            // OPC 서버에 연결
-            opcServer.Connect(opcServerIP);
-
-            // OPC 그룹 생성 및 설정
-            opcGroups = opcServer.OPCGroups; // opc 서버에서 그룹을 관리하는 객체를 가져옴
-            // 이름에 맞는 OPC 그룹을 생성
-            opcGroup = opcGroups.Add("YourGroup");
-            // OPC 그룹을 활성화
-            opcGroup.IsActive = true;
-            // OPC 그룹을 구독 모드로 설정하여 실시간 데이터 수집
-            opcGroup.IsSubscribed = true;
-            // OPC 아이템들을 관리하는 객체를 가져옴
-            opcItems = opcGroup.OPCItems;
-            */
-
-            // reserve 값이 0 일시 입고 함수 처리
-            if (reserve == 0)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                InReserveData(cancellationToken);
-            }
-            // reserve 값이 1 일시 출고 함수 처리
-            else if (reserve == 1)
-            {
-                OutReserveData(cancellationToken);
+                /*
+                // OPC 서버 연결
+                opcServer = new OPCServer();
+                // OPC 서버에 연결
+                opcServer.Connect(opcServerIP);
+
+                // OPC 그룹 생성 및 설정
+                opcGroups = opcServer.OPCGroups; // opc 서버에서 그룹을 관리하는 객체를 가져옴
+                // 이름에 맞는 OPC 그룹을 생성
+                opcGroup = opcGroups.Add("YourGroup");
+                // OPC 그룹을 활성화
+                opcGroup.IsActive = true;
+                // OPC 그룹을 구독 모드로 설정하여 실시간 데이터 수집
+                opcGroup.IsSubscribed = true;
+                // OPC 아이템들을 관리하는 객체를 가져옴
+                opcItems = opcGroup.OPCItems;
+                */
+
+                // item 사용
+                opcItemList.Add(opcItems.AddItem("PLT_IN_OUT", 1));
+                opcItemList.Add(opcItems.AddItem("Job_Line", 1));
+                opcItemList.Add(opcItems.AddItem("Serial_No", 1));
+                opcItemList.Add(opcItems.AddItem("PLT_Number", 1));
+                opcItemList.Add(opcItems.AddItem("PLT_TYPE", 1));
+                opcItemList.Add(opcItems.AddItem("Car_Type", 1));
+                opcItemList.Add(opcItems.AddItem("Item", 1));
+                opcItemList.Add(opcItems.AddItem("Spec", 1));
+                opcItemList.Add(opcItems.AddItem("LINE", 1));
+                opcItemList.Add(opcItems.AddItem("Parts_count_in_pallet", 1));
+                opcItemList.Add(opcItems.AddItem("Counts", 1));
+
+                /* PLT_CODE 사용
+
+                // OPC 아이템 추가
+                opcItemList.Add(opcItems.AddItem("PLT_IN_OUT", 1));
+                opcItemList.Add(opcItems.AddItem("Job_Line", 1));
+                opcItemList.Add(opcItems.AddItem("Serial_No", 1));
+                opcItemList.Add(opcItems.AddItem("PLT_Number", 1));
+                opcItemList.Add(opcItems.AddItem("PLT_CODE", 1));
+                opcItemList.Add(opcItems.AddItem("Parts_count_in_pallet", 1));
+                */
+
+                string callNum = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
+
+                // PLT_IN_OUT 요청 번호를 받을 int 형 변수 callNum
+                if (!string.IsNullOrEmpty(callNum))
+                {
+                    // callNum 값이 1 일시 입고 함수 처리
+                    if ( int.Parse(callNum) == 1)
+                    {
+                        InReserveData(cancellationToken);
+                    }
+                    // callNum 값이 2 일시 출고 함수 처리
+                    else if (int.Parse(callNum) == 2)
+                    {
+                        OutReserveData(cancellationToken);
+                    }
+                }
             }
         }
 
         // OPC 서버 연결 및 데이터 수집 메서드
         private void InReserveData(CancellationToken cancellationToken)
         {
-            Dictionary<string, object> itemValues = new Dictionary<string, object>();
-
-            /* item 사용
-            opcItemList.Add(opcItems.AddItem("PLT_IN_OUT", 1));
-            opcItemList.Add(opcItems.AddItem("Job_Line", 1));
-            opcItemList.Add(opcItems.AddItem("Serial_No", 1));
-            opcItemList.Add(opcItems.AddItem("PLT_Number", 1));
-            opcItemList.Add(opcItems.AddItem("PLT_TYPE", 1));
-            opcItemList.Add(opcItems.AddItem("Car_Type", 1));
-            opcItemList.Add(opcItems.AddItem("Item", 1));
-            opcItemList.Add(opcItems.AddItem("Spec", 1));
-            opcItemList.Add(opcItems.AddItem("LINE", 1));
-            opcItemList.Add(opcItems.AddItem("Parts_count_in_pallet", 1));
-            opcItemList.Add(opcItems.AddItem("Counts", 1));
-            */
-
-            /* PLT_CODE 사용
-            
-            // OPC 아이템 추가
-            opcItemList.Add(opcItems.AddItem("PLT_IN_OUT", 1));
-            opcItemList.Add(opcItems.AddItem("Job_Line", 1));
-            opcItemList.Add(opcItems.AddItem("Serial_No", 1));
-            opcItemList.Add(opcItems.AddItem("PLT_Number", 1));
-            opcItemList.Add(opcItems.AddItem("PLT_CODE", 1));
-            opcItemList.Add(opcItems.AddItem("Parts_count_in_pallet", 1));
-            */
-
-            while (!cancellationToken.IsCancellationRequested)
+            using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                try
                 {
-                    try
-                    {
-                        connection.Open();
+                    connection.Open();
 
-                        SQLstateTxt.ForeColor = Color.Blue;
-                        /*
-                        itemValues["PLT_IN_OUT"] = opcItems.AddItem("PLT_IN_OUT", 1);
-                        itemValues["Job_Line"] = opcItems.AddItem("Job_Line", 1);
-                        itemValues["Serial_No"] = opcItems.AddItem("Serial_No", 1);
-                        itemValues["Pal_no"] = opcItems.AddItem("PLT_Number", 1);
-                        itemValues["Pal_type"] = opcItems.AddItem("PLT_TYPE", 1);
-                        itemValues["Car_Type"] = opcItems.AddItem("Car_Type", 1);
-                        itemValues["Item"] = opcItems.AddItem("Item", 1);
-                        itemValues["Spec"] = opcItems.AddItem("Spec", 1);
-                        itemValues["LINE"] = opcItems.AddItem("LINE", 1);
-                        itemValues["Max_qty"] = opcItems.AddItem("Parts_count_in_pallet", 1);
-                        itemValues["Counts"] = opcItems.AddItem("Counts", 1);
-                        */
+                    SQLstateTxt.ForeColor = Color.Blue;
+                   
+                    //string code = opcItemList.Find(pltCode => pltCode.ItemID == "PLT_CODE").ToString();
+                    //char codeFirstChar = code.FirstOrDefault();
 
-                        itemValues["PLT_IN_OUT"] = 1;
-                        itemValues["Job_Line"] = 201;
-                        itemValues["Serial_No"] = "2311010001";
-                        itemValues["Pal_no"] = "6";
-                        itemValues["Pal_type"] = "4";
-                        itemValues["Car_Type"] = "2";
-                        itemValues["Item"] = "67111";
-                        itemValues["Spec"] = "1";
-                        itemValues["LINE"] = "2";
-                        itemValues["Max_qty"] = 2;
-                        itemValues["Counts"] = "3";
+                    /*                   string query = @"
+                                       SELECT TOP 1
+                                           tsc.Stk_no,
+                                           tsc.Stk_state,
+                                           tc.Cell,
+                                           tc.State,
+                                           tc.PLT_CODE
+                                       FROM
+                                           t_SC_state tsc
+                                       LEFT JOIN
+                                           t_Cell tc ON LEFT(tc.Cell, 2) = tsc.Stk_no
+                                       WHERE
+                                           tsc.Stk_state = 0
+                                           AND tc.LEFT(tc.PLT_CODE, 1) >= @codeFirstChar
+                                           AND tc.State = 'EMPTY'
+                                       ORDER BY
+                                           tsc.Stk_no DESC
+                                   ";
+                    */
 
-                        string item = itemValues["Item"].ToString();
-                        //string code = opcItemList.Find(pltCode => pltCode.ItemID == "PLT_CODE").ToString();
-                        //char codeFirstChar = code.FirstOrDefault();
-
-                        /*                   string query = @"
-                                           SELECT TOP 1
-                                               tsc.Stk_no,
-                                               tsc.Stk_state,
-                                               tc.Cell,
-                                               tc.State,
-                                               tc.PLT_CODE
-                                           FROM
-                                               t_SC_state tsc
-                                           LEFT JOIN
-                                               t_Cell tc ON LEFT(tc.Cell, 2) = tsc.Stk_no
-                                           WHERE
-                                               tsc.Stk_state = 0
-                                               AND tc.LEFT(tc.PLT_CODE, 1) >= @codeFirstChar
-                                               AND tc.State = 'EMPTY'
-                                           ORDER BY
-                                               tsc.Stk_no DESC
-                                       ";
-                        */
-
-                        string query = @"
+                    string query = @"
                     SELECT TOP 1
                         tsc.Stk_no,
                         tsc.Stk_state,
@@ -192,41 +170,31 @@ namespace Press_DB
                     ORDER BY
                         tsc.Stk_no DESC
                 ";
-                        SqlCommand command = new SqlCommand(query, connection);
-                        command.Parameters.AddWithValue("@item", item);
-                        SqlDataReader reader = command.ExecuteReader();
-                        while (reader.Read())
-                        {
-
-                            string cell = reader["Cell"].ToString();
-
-
-                            itemValues["JobType"] = "INAUTO";
-                            itemValues["Cell"] = cell;
-                            itemValues["State"] = "INCOMP";
-                            itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
-                            itemValues["Utime"] = DateTime.Now.ToString("hh:mm:ss");
-
-                            int stkState = Convert.ToInt32(reader["Stk_state"]);
-
-                            if (stkState == 0)
-                            {
-                                UpdateListView(cell, "정상 입고", "정상", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("hh:mm:ss"));
-                            }
-
-                            reader.Close();
-
-                            InsertToDatabase(connection, 0, itemValues);
-
-                            opcThread.Join();
-                        }
-                    }
-
-                    catch (Exception ex)
+                    SqlCommand command = new SqlCommand(query, connection);
+                    command.Parameters.AddWithValue("@item", item);
+                    SqlDataReader reader = command.ExecuteReader();
+                    while (reader.Read())
                     {
-                        SQLstateTxt.ForeColor = Color.Red;
-                        MessageBox.Show(ex.ToString());
+
+                        string cell = reader["Cell"].ToString();
+
+                        int stkState = Convert.ToInt32(reader["Stk_state"]);
+
+                        if (stkState == 0)
+                        {
+                            UpdateListView(cell, "정상 입고", "정상", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                        }
+
+                        reader.Close();
+
+                        //InsertToDatabase(connection, 0, itemValues);
                     }
+                }
+
+                catch (Exception ex)
+                {
+                    SQLstateTxt.ForeColor = Color.Red;
+                    MessageBox.Show(ex.ToString());
                 }
             }
         }
@@ -246,7 +214,6 @@ namespace Press_DB
            opcItemList.Add(opcItems.AddItem("PLT_CODE", 1));
            */
 
-            Dictionary<string, object> itemValues = new Dictionary<string, object>();
             //itemValues["Item"] = opcItems.AddItem("Item", 1);
             //opcItemList.Add(opcItems.AddItem("item", 1));
             //testitem.Add("PLT_CODE");
@@ -298,35 +265,14 @@ namespace Press_DB
                         int stkState = Convert.ToInt32(reader["Stk_state"]);
                         string cell = reader["Cell"].ToString();
 
-                        itemValues["JobType"] = "OUTAUTO";
-                        itemValues["Cell"] = cell;
-                        itemValues["Pal_no"] = reader["Pal_no"].ToString();
-                        itemValues["Pal_type"] = reader["Pal_type"].ToString();
-                        itemValues["Model"] = reader["Model"].ToString();
-                        itemValues["Item"] = reader["Item"].ToString();
-                        itemValues["Spec"] = reader["Spec"].ToString();
-                        itemValues["Line"] = reader["Line"].ToString();
-                        itemValues["Qty"] = reader["Qty"].ToString();
-                        itemValues["Max_qty"] = reader["Max_qty"].ToString();
-                        itemValues["Quality"] = reader["Quality"].ToString();
-                        itemValues["Prod_date"] = reader["Prod_date"].ToString();
-                        itemValues["Prod_time"] = reader["Prod_time"].ToString();
-                        itemValues["State"] = "OUTCOMP";
-                        itemValues["Pos"] = reader["Pos"].ToString();
-                        itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
-                        itemValues["Utime"] = DateTime.Now.ToString("hh:mm:ss");
-
-
                         if (stkState == 0)
                         {
-                            UpdateListView(cell, "정상 출고", "정상", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("hh:mm:ss"));
+                            UpdateListView(cell, "정상 출고", "정상", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                         }
                     }
                     reader.Close();
 
-                    InsertToDatabase(connection, 1, itemValues);
-
-                    opcThread.Join();
+                    //InsertToDatabase(connection, 1, itemValues);
                 }
             }
         }
