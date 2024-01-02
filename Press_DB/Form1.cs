@@ -27,6 +27,8 @@ namespace Press_DB
         private CancellationTokenSource cancellationTokenSource;
         // opc item 값을 담아올 List  변수 선언
         private List<OPCItem> opcItemList = new List<OPCItem>();
+        // tsc.Stk_no 의 최종 검색 값을 저장할 변수 선언
+        int lastSearchValue;
 
         public Form1()
         {
@@ -48,12 +50,12 @@ namespace Press_DB
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
             // 스레드 시작
-            opcThread = new Thread(() => opcServerJoin(cancellationToken));
+            opcThread = new Thread(() => opcServerJoin(reserve, cancellationToken));
             opcThread.Start();
         }
 
         // opc 서버와 연결하여 통신을 하며 아이템 객체들을 가져옴
-        private void opcServerJoin( CancellationToken cancellationToken)
+        private void opcServerJoin( int reserve ,CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -75,6 +77,7 @@ namespace Press_DB
                 opcItems = opcGroup.OPCItems;
                 */
 
+                /*
                 // item 사용
                 opcItemList.Add(opcItems.AddItem("PLT_IN_OUT", 1));
                 opcItemList.Add(opcItems.AddItem("Job_Line", 1));
@@ -87,6 +90,7 @@ namespace Press_DB
                 opcItemList.Add(opcItems.AddItem("LINE", 1));
                 opcItemList.Add(opcItems.AddItem("Parts_count_in_pallet", 1));
                 opcItemList.Add(opcItems.AddItem("Counts", 1));
+                */
 
                 /* PLT_CODE 사용
 
@@ -101,20 +105,32 @@ namespace Press_DB
 
                 string callNum = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
 
-                // PLT_IN_OUT 요청 번호를 받을 int 형 변수 callNum
-                if (!string.IsNullOrEmpty(callNum))
+
+                if (reserve == 1)
                 {
-                    // callNum 값이 1 일시 입고 함수 처리
-                    if ( int.Parse(callNum) == 1)
-                    {
-                        InReserveData(cancellationToken);
-                    }
-                    // callNum 값이 2 일시 출고 함수 처리
-                    else if (int.Parse(callNum) == 2)
-                    {
-                        OutReserveData(cancellationToken);
-                    }
+                    InReserveData(cancellationToken);
                 }
+                // callNum 값이 2 일시 출고 함수 처리
+                else if (reserve == 2)
+                {
+                    OutReserveData(cancellationToken);
+                }
+
+
+                // PLT_IN_OUT 요청 번호를 받을 int 형 변수 callNum
+                //if (!string.IsNullOrEmpty(callNum))
+                //{
+                //    // callNum 값이 1 일시 입고 함수 처리
+                //    if ( int.Parse(callNum) == 1)
+                //    {
+                //        InReserveData(cancellationToken);
+                //    }
+                //    // callNum 값이 2 일시 출고 함수 처리
+                //    else if (int.Parse(callNum) == 2)
+                //    {
+                //        OutReserveData(cancellationToken);
+                //    }
+                //}
             }
         }
 
@@ -128,7 +144,7 @@ namespace Press_DB
                     connection.Open();
 
                     SQLstateTxt.ForeColor = Color.Blue;
-                   
+
                     //string code = opcItemList.Find(pltCode => pltCode.ItemID == "PLT_CODE").ToString();
                     //char codeFirstChar = code.FirstOrDefault();
 
@@ -142,7 +158,7 @@ namespace Press_DB
                                        FROM
                                            t_SC_state tsc
                                        LEFT JOIN
-                                           t_Cell tc ON LEFT(tc.Cell, 2) = tsc.Stk_no
+                                           t_Cell tc ON (tc.Bank = tsc.Stk_no * 2 - 1 OR tc.Bank = tsc.Stk_no * 2)
                                        WHERE
                                            tsc.Stk_state = 0
                                            AND tc.LEFT(tc.PLT_CODE, 1) >= @codeFirstChar
@@ -153,25 +169,41 @@ namespace Press_DB
                     */
 
                     string query = @"
+                    DECLARE @maxStkNo INT;
+                     
+                    SELECT
+                         @maxStkNo = MAX(Stk_no)
+                    FROM 
+                        t_SC_state
                     SELECT TOP 1
                         tsc.Stk_no,
                         tsc.Stk_state,
-                        tc.Cell,
+                        tc.Bank,
                         tc.Cell_type,
-                        tc.State
+                        tc.State,
+                        tc.Cell
                     FROM
                         t_SC_state tsc
                     LEFT JOIN
-                        t_Cell tc ON LEFT(tc.Cell, 2) = tsc.Stk_no
+                        t_Cell tc ON (tc.Bank = tsc.Stk_no * 2 - 1 OR tc.Bank = tsc.Stk_no * 2)
                     WHERE
                         tsc.Stk_state = 0
-                        AND tc.Cell_type >= @item
+                        AND tc.Cell_type >= 71112
                         AND tc.State = 'EMPTY'
+                        AND tc.Cell NOT IN (SELECT Cell FROM t_In_reserve) -- t_In_reserve 에 tc.Cell 과 같은 Cell 존재하지 않는 것만 검색합니다.
+                        AND (
+                        (tsc.Stk_no >= @lastSearchValue AND tsc.Stk_no <= @maxStkNo) -- 이전 검색값 이상, 최대 값 이하인 값들을 검색합니다.
+                        OR (tsc.Stk_no <= @lastSearchValue) -- 마지막 검색값 이하인 값들을 검색합니다.
+                        )
                     ORDER BY
                         tsc.Stk_no DESC
-                ";
+                    ";
+
+                    //string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
+
                     SqlCommand command = new SqlCommand(query, connection);
-                    command.Parameters.AddWithValue("@item", item);
+                    command.Parameters.AddWithValue("@lastSearchValue", lastSearchValue);
+                    //command.Parameters.AddWithValue("@item", item);
                     SqlDataReader reader = command.ExecuteReader();
                     while (reader.Read())
                     {
@@ -180,15 +212,16 @@ namespace Press_DB
 
                         int stkState = Convert.ToInt32(reader["Stk_state"]);
 
+                        lastSearchValue = Convert.ToInt32(reader["Stk_no"]);
+
                         if (stkState == 0)
                         {
                             UpdateListView(cell, "정상 입고", "정상", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                         }
-
-                        reader.Close();
-
                         //InsertToDatabase(connection, 0, itemValues);
                     }
+                    reader.Close();
+                    opcThread.Join();
                 }
 
                 catch (Exception ex)
@@ -227,6 +260,12 @@ namespace Press_DB
                     //string Code = opcItemList.Find(pltCode => pltCode.ItemID == "PLT_CODE").ToString();
                     //string Code = opcItemList.Find(pltCode => pltCode.ItemID == "item").ToString();
                     string query = @"
+                    DECLARE @maxStkNo INT;
+                     
+                    SELECT
+                         @maxStkNo = MAX(Stk_no)
+                    FROM 
+                        t_SC_state
                     SELECT TOP 1
                         tsc.Stk_no,
                         tsc.Stk_state,
@@ -247,18 +286,24 @@ namespace Press_DB
                     FROM
                         t_SC_state tsc
                     LEFT JOIN
-                        t_Cell tc ON LEFT(tc.Cell, 2) = tsc.Stk_no
+                        t_Cell tc ON (tc.Bank = tsc.Stk_no * 2 - 1 OR tc.Bank = tsc.Stk_no * 2)
                     WHERE
                         tsc.Stk_state = 0
-                        AND tc.item = '67111'
+                        AND tc.Cell_type >= 67111
                         AND tc.State = 'INCOMP'
+                        AND tc.Cell NOT IN (SELECT Cell FROM t_Out_reserve) -- t_Out_reserve 에 tc.Cell 과 같은 Cell 존재하지 않는 것만 검색합니다.
+                        AND (
+                        (tsc.Stk_no >= @lastSearchValue AND tsc.Stk_no <= @maxStkNo) -- 이전 검색값 이상, 최대 값 이하인 값들을 검색합니다.
+                        OR (tsc.Stk_no <= @lastSearchValue) -- 마지막 검색값 이하인 값들을 검색합니다.
+                        )
                     ORDER BY
-                        CONVERT(datetime, tc.Udate + ' ' + Utime) ASC,
-                        tsc.Stk_no DESC;
+                        tsc.Stk_no DESC
                 ";
+                    //string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
 
                     SqlCommand command = new SqlCommand(query, connection);
-                    //command.Parameters.AddWithValue("@Item", Item);
+                    command.Parameters.AddWithValue("@lastSearchValue", lastSearchValue);
+                    //command.Parameters.AddWithValue("@item", item);
                     SqlDataReader reader = command.ExecuteReader();
                     while (reader.Read())
                     {
@@ -386,12 +431,12 @@ namespace Press_DB
 
         private void inBtn_Click(object sender, EventArgs e)
         {
-            StartThread(0);
+            StartThread(1);
         }
 
         private void outBtn_Click(object sender, EventArgs e)
         {
-            StartThread(1);
+            StartThread(2);
         }
     }
 }
