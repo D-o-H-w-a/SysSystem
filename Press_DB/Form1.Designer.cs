@@ -28,25 +28,26 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
             OPCstateTxt = new TextBox();
-            inBtn = new Button();
             outBtn = new Button();
-            SQLstateTxt = new TextBox();
             listBox = new GroupBox();
             dataGrid = new DataGridView();
             groupBox = new GroupBox();
-            workTime = new DataGridViewTextBoxColumn();
-            workDate = new DataGridViewTextBoxColumn();
-            scState = new DataGridViewTextBoxColumn();
-            cellState = new DataGridViewTextBoxColumn();
+            SQLstateTxt = new TextBox();
+            inBtn = new Button();
             cellNum = new DataGridViewTextBoxColumn();
+            cellState = new DataGridViewTextBoxColumn();
+            scState = new DataGridViewTextBoxColumn();
+            workDate = new DataGridViewTextBoxColumn();
+            workTime = new DataGridViewTextBoxColumn();
             listBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGrid).BeginInit();
             groupBox.SuspendLayout();
@@ -57,50 +58,27 @@
             OPCstateTxt.BackColor = SystemColors.ActiveCaption;
             OPCstateTxt.BorderStyle = BorderStyle.None;
             OPCstateTxt.Font = new Font("맑은 고딕", 10.8F);
-            OPCstateTxt.Location = new Point(130, 100);
+            OPCstateTxt.Location = new Point(422, 100);
             OPCstateTxt.Name = "OPCstateTxt";
             OPCstateTxt.ReadOnly = true;
             OPCstateTxt.Size = new Size(164, 24);
             OPCstateTxt.TabIndex = 1;
             OPCstateTxt.Text = "OPC Comm Status";
             // 
-            // inBtn
-            // 
-            inBtn.BackColor = SystemColors.HotTrack;
-            inBtn.Font = new Font("맑은 고딕", 9F);
-            inBtn.ForeColor = Color.White;
-            inBtn.Location = new Point(210, 28);
-            inBtn.Name = "inBtn";
-            inBtn.Size = new Size(84, 52);
-            inBtn.TabIndex = 0;
-            inBtn.Text = "입고";
-            inBtn.UseVisualStyleBackColor = false;
-            inBtn.Click += inBtn_Click;
-            // 
             // outBtn
             // 
             outBtn.BackColor = SystemColors.HotTrack;
+            outBtn.BackgroundImage = (Image)resources.GetObject("outBtn.BackgroundImage");
+            outBtn.FlatStyle = FlatStyle.Popup;
             outBtn.Font = new Font("맑은 고딕", 9F);
             outBtn.ForeColor = Color.White;
             outBtn.Location = new Point(422, 28);
             outBtn.Name = "outBtn";
             outBtn.Size = new Size(84, 52);
             outBtn.TabIndex = 0;
-            outBtn.Text = "출고";
+            outBtn.Text = "OUT";
             outBtn.UseVisualStyleBackColor = false;
             outBtn.Click += outBtn_Click;
-            // 
-            // SQLstateTxt
-            // 
-            SQLstateTxt.BackColor = SystemColors.ActiveCaption;
-            SQLstateTxt.BorderStyle = BorderStyle.None;
-            SQLstateTxt.Font = new Font("맑은 고딕", 10.8F);
-            SQLstateTxt.Location = new Point(422, 100);
-            SQLstateTxt.Name = "SQLstateTxt";
-            SQLstateTxt.ReadOnly = true;
-            SQLstateTxt.Size = new Size(164, 24);
-            SQLstateTxt.TabIndex = 1;
-            SQLstateTxt.Text = "SQL Comm Status";
             // 
             // listBox
             // 
@@ -113,6 +91,8 @@
             // 
             // dataGrid
             // 
+            dataGrid.AllowUserToResizeColumns = false;
+            dataGrid.AllowUserToResizeRows = false;
             dataGrid.BackgroundColor = Color.FromArgb(191, 205, 218);
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
             dataGridViewCellStyle1.BackColor = SystemColors.Control;
@@ -124,8 +104,10 @@
             dataGrid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dataGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGrid.Columns.AddRange(new DataGridViewColumn[] { cellNum, cellState, scState, workDate, workTime });
+            dataGrid.Enabled = false;
             dataGrid.EnableHeadersVisualStyles = false;
             dataGrid.Location = new Point(6, 26);
+            dataGrid.MultiSelect = false;
             dataGrid.Name = "dataGrid";
             dataGrid.ReadOnly = true;
             dataGrid.RightToLeft = RightToLeft.No;
@@ -141,6 +123,7 @@
             dataGrid.RowHeadersWidth = 51;
             dataGrid.Size = new Size(755, 351);
             dataGrid.TabIndex = 0;
+            dataGrid.TabStop = false;
             // 
             // groupBox
             // 
@@ -149,6 +132,7 @@
             groupBox.Controls.Add(inBtn);
             groupBox.Controls.Add(outBtn);
             groupBox.Controls.Add(SQLstateTxt);
+            groupBox.FlatStyle = FlatStyle.Popup;
             groupBox.Font = new Font("맑은 고딕", 1F);
             groupBox.Location = new Point(15, 8);
             groupBox.Name = "groupBox";
@@ -156,56 +140,83 @@
             groupBox.TabIndex = 2;
             groupBox.TabStop = false;
             // 
-            // workTime
+            // SQLstateTxt
             // 
-            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            workTime.DefaultCellStyle = dataGridViewCellStyle6;
-            workTime.HeaderText = "작업 시간";
-            workTime.MinimumWidth = 6;
-            workTime.Name = "workTime";
-            workTime.ReadOnly = true;
-            workTime.Width = 157;
+            SQLstateTxt.BackColor = SystemColors.ActiveCaption;
+            SQLstateTxt.BorderStyle = BorderStyle.None;
+            SQLstateTxt.Font = new Font("맑은 고딕", 10.8F);
+            SQLstateTxt.Location = new Point(144, 100);
+            SQLstateTxt.Name = "SQLstateTxt";
+            SQLstateTxt.ReadOnly = true;
+            SQLstateTxt.Size = new Size(164, 24);
+            SQLstateTxt.TabIndex = 1;
+            SQLstateTxt.Text = "SQL Comm Status";
             // 
-            // workDate
+            // inBtn
             // 
-            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            workDate.DefaultCellStyle = dataGridViewCellStyle5;
-            workDate.HeaderText = "작업 날짜";
-            workDate.MinimumWidth = 6;
-            workDate.Name = "workDate";
-            workDate.ReadOnly = true;
-            workDate.Width = 158;
-            // 
-            // scState
-            // 
-            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            scState.DefaultCellStyle = dataGridViewCellStyle4;
-            scState.HeaderText = "크레인 상태";
-            scState.MinimumWidth = 6;
-            scState.Name = "scState";
-            scState.ReadOnly = true;
-            scState.Width = 157;
-            // 
-            // cellState
-            // 
-            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            cellState.DefaultCellStyle = dataGridViewCellStyle3;
-            cellState.HeaderText = "처리 결과";
-            cellState.MinimumWidth = 6;
-            cellState.Name = "cellState";
-            cellState.ReadOnly = true;
-            cellState.Width = 158;
+            inBtn.BackColor = SystemColors.HotTrack;
+            inBtn.BackgroundImage = (Image)resources.GetObject("inBtn.BackgroundImage");
+            inBtn.FlatStyle = FlatStyle.Popup;
+            inBtn.Font = new Font("맑은 고딕", 9F);
+            inBtn.ForeColor = Color.White;
+            inBtn.Location = new Point(224, 28);
+            inBtn.Name = "inBtn";
+            inBtn.Size = new Size(84, 52);
+            inBtn.TabIndex = 0;
+            inBtn.Text = "IN";
+            inBtn.UseVisualStyleBackColor = false;
+            inBtn.Click += outBtn_Click;
             // 
             // cellNum
             // 
             cellNum.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
             cellNum.DefaultCellStyle = dataGridViewCellStyle2;
-            cellNum.HeaderText = "셀 번호";
+            cellNum.HeaderText = "Cell Num";
             cellNum.MinimumWidth = 6;
             cellNum.Name = "cellNum";
             cellNum.ReadOnly = true;
             cellNum.Width = 122;
+            // 
+            // cellState
+            // 
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            cellState.DefaultCellStyle = dataGridViewCellStyle3;
+            cellState.HeaderText = "Result";
+            cellState.MinimumWidth = 6;
+            cellState.Name = "cellState";
+            cellState.ReadOnly = true;
+            cellState.Width = 158;
+            // 
+            // scState
+            // 
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            scState.DefaultCellStyle = dataGridViewCellStyle4;
+            scState.HeaderText = "Crane State";
+            scState.MinimumWidth = 6;
+            scState.Name = "scState";
+            scState.ReadOnly = true;
+            scState.Width = 157;
+            // 
+            // workDate
+            // 
+            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            workDate.DefaultCellStyle = dataGridViewCellStyle5;
+            workDate.HeaderText = "Work Date";
+            workDate.MinimumWidth = 6;
+            workDate.Name = "workDate";
+            workDate.ReadOnly = true;
+            workDate.Width = 158;
+            // 
+            // workTime
+            // 
+            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            workTime.DefaultCellStyle = dataGridViewCellStyle6;
+            workTime.HeaderText = "Work Time";
+            workTime.MinimumWidth = 6;
+            workTime.Name = "workTime";
+            workTime.ReadOnly = true;
+            workTime.Width = 157;
             // 
             // Form1
             // 
@@ -224,17 +235,17 @@
         }
 
         #endregion
-        private Button inBtn;
         private Button outBtn;
         private TextBox OPCstateTxt;
         private GroupBox listBox;
         private DataGridView dataGrid;
-        private TextBox SQLstateTxt;
         private GroupBox groupBox;
+        private TextBox SQLstateTxt;
         private DataGridViewTextBoxColumn cellNum;
         private DataGridViewTextBoxColumn cellState;
         private DataGridViewTextBoxColumn scState;
         private DataGridViewTextBoxColumn workDate;
         private DataGridViewTextBoxColumn workTime;
+        private Button inBtn;
     }
 }
