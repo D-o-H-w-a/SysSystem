@@ -28,7 +28,9 @@ namespace Press_DB
         // opc item 값을 담아올 List  변수 선언
         private List<OPCItem> opcItemList = new List<OPCItem>();
         // tsc.Stk_no 의 최종 검색 값을 저장할 변수 선언
-        int lastSearchValue;
+        private int lastSearchValue;
+        // Data 들을 저장할 리스트 형태로 저장할 딕셔너리 변수.
+        private Dictionary<string, object> itemValues = new Dictionary<string, object>();
 
         public Form1()
         {
@@ -74,6 +76,7 @@ namespace Press_DB
             // OPC 아이템들을 관리하는 객체를 가져옴
             opcItems = opcGroup.OPCItems;
 
+            // 스레드가 실행되고 있는 동안 반복
             while (!cancellationToken.IsCancellationRequested)
             {
                 /*
@@ -102,9 +105,10 @@ namespace Press_DB
                 opcItemList.Add(opcItems.AddItem("Parts_count_in_pallet", 1));
                 */
 
+                // string 형태 callNum 변수에 opcItemList 에서 PLT_IN_OUT 키의 값을 callNum 에 전달
                 string callNum = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
 
-
+                // reserve 값이 1 일시 출고 함수 처리
                 if (reserve == 1)
                 {
                     InReserveData(cancellationToken);
@@ -136,12 +140,18 @@ namespace Press_DB
         // OPC 서버 연결 및 데이터 수집 메서드
         private void InReserveData(CancellationToken cancellationToken)
         {
+            // connectionString 변수에 저장된 데이터베이스 주소를 통해서 연결
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 try
                 {
+                    // 데이터베이스 접속
                     connection.Open();
+                    
+                    // ItemValues 딕셔너리 값을 전부 초기화
+                    itemValues.Clear();
 
+                    // SQL 에 정상 연결되었다면 텍스트 색상을 파랑색으로 변경
                     SQLstateTxt.ForeColor = Color.Blue;
 
                     /*
@@ -211,32 +221,48 @@ namespace Press_DB
                         tsc.Stk_no DESC
                     ";
 
+                    // opcItemList에서 ItemID가 "Item"인 항목을 찾아 해당 값(Value)을 가져옵니다.
                     string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
 
+                    // SqlCommand 개체를 만들고 쿼리(query)와 연결(connection)을 설정합니다.
                     SqlCommand command = new SqlCommand(query, connection);
+                    // @lastSearchValue와 @item 매개변수에 값을 할당합니다.
                     command.Parameters.AddWithValue("@lastSearchValue", lastSearchValue);
                     command.Parameters.AddWithValue("@item", item);
+                    // 쿼리를 실행하고 SqlDataReader로 결과를 가져옵니다.
                     SqlDataReader reader = command.ExecuteReader();
+                    // SqlDataReader를 반복하여 각 행을 처리합니다.
                     while (reader.Read())
                     {
-
+                        // "Cell" 열의 값을 가져와 문자열로 변환합니다.
                         string cell = reader["Cell"].ToString();
 
+                        // "Stk_state" 열의 값을 가져와 정수로 변환합니다.
                         int stkState = Convert.ToInt32(reader["Stk_state"]);
 
+                        // "Stk_no" 열의 값을 가져와 정수로 변환한 후 lastSearchValue 변수에 할당합니다.
                         lastSearchValue = Convert.ToInt32(reader["Stk_no"]);
 
+                        // "Cell" 열의 값을 itemValues라는 딕셔너리나 컬렉션에 할당합니다.
+                        itemValues["Cell"] = cell;
+
+                        // stkState의 값이 0인지 확인합니다.
                         if (stkState == 0)
                         {
+                            // stkState가 0이면 UpdateListView 함수를 호출하여 특정 매개변수로 ListView 컨트롤을 업데이트합니다.
+                            // 셀 정보, "정상 입고"(Normal Incoming), "정상"(Normal), 그리고 현재 날짜와 시간을 특정 형식으로 전달합니다.
                             UpdateListView(cell, "정상 입고", "정상", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                         }
+                        // Inreserve 함수를 호출하고 'connection' 객체를 매개변수로 전달합니다.
                         Inreserve(connection);
                     }
+                    // 모든 행을 반복한 후 SqlDataReader를 닫습니다.
                     reader.Close();
                 }
 
                 catch (Exception ex)
                 {
+                    // SQL 에러가 접속 에러가 날 시 텍스트 색상을 빨간색으로 변경하고 메세지 박스를 통해 에러를 표시합니다.
                     SQLstateTxt.ForeColor = Color.Red;
                     MessageBox.Show(ex.ToString());
                 }
@@ -260,13 +286,14 @@ namespace Press_DB
 
             //itemValues["Item"] = opcItems.AddItem("Item", 1);
             //opcItemList.Add(opcItems.AddItem("item", 1));
-            //testitem.Add("PLT_CODE");
 
             while (!cancellationToken.IsCancellationRequested)
             {
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
+
+                    itemValues.Clear();
                     //string Code = opcItemList.Find(pltCode => pltCode.ItemID == "PLT_CODE").ToString();
                     /*
                     string query = @"
@@ -334,6 +361,7 @@ namespace Press_DB
                         tc.Quality,
                         tc.Prod_date,
                         tc.Prod_time,
+                        tc.Serial_no,
                         tc.Pos
                     FROM
                         t_SC_state tsc
@@ -351,37 +379,61 @@ namespace Press_DB
                     ORDER BY
                         tsc.Stk_no DESC
                 ";
-                    
+
+                    // OPC 항목 리스트에서 ItemID가 "Item"인 값을 찾아 item 변수에 할당합니다.
                     string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
 
+                    // SqlCommand 개체를 생성하고 쿼리와 연결을 설정합니다.
                     SqlCommand command = new SqlCommand(query, connection);
+                    // @lastSearchValue와 @item 매개변수에 값을 할당합니다.
                     command.Parameters.AddWithValue("@lastSearchValue", lastSearchValue);
                     command.Parameters.AddWithValue("@item", item);
+                    // 쿼리를 실행하고 SqlDataReader로 결과를 가져옵니다.
                     SqlDataReader reader = command.ExecuteReader();
+                    // SqlDataReader를 반복하여 각 행을 처리합니다.
                     while (reader.Read())
-                    {
+                    { 
+                        // 각 열의 값을 변수에 할당합니다.
                         int stkState = Convert.ToInt32(reader["Stk_state"]);
                         string cell = reader["Cell"].ToString();
+                        
+                        // 각 열의 값을 itemValues 딕셔너리에 할당합니다.
+                        itemValues["Cell"] = cell;
+                        itemValues["item"] = item;
+                        itemValues["State"] = reader["State"].ToString();
+                        itemValues["Pal_no"] = reader["Pal_no"].ToString();
+                        itemValues["Pal_type"] = reader["Pal_type"].ToString();
+                        itemValues["Model"] = reader["Model"].ToString();
+                        itemValues["Spec"] = reader["Spec"].ToString();
+                        itemValues["Line"] = reader["Line"].ToString();
+                        itemValues["Qty"] = Convert.ToInt32(reader["Qty"]);
+                        itemValues["Max_qty"] = Convert.ToInt32(reader["Max_qty"]);
+                        itemValues["Quality"] = reader["Quality"].ToString();
+                        itemValues["Prod_date"] = reader["Prod_date"].ToString();
+                        itemValues["Prod_time"] = reader["Prod_time"].ToString();
+                        itemValues["Pos"] = reader["Pos"].ToString();
+                        itemValues["Serial_no"] = Convert.ToDouble(reader["Serial_no"]);
+                        itemValues["JobType"] = "OUTAUTO";
 
+                        // 만약 stkState가 0이면 ListView 컨트롤을 업데이트합니다.
                         if (stkState == 0)
                         {
                             UpdateListView(cell, "정상 출고", "정상", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                         }
                     }
+                    // SqlDataReader를 닫습니다.
                     reader.Close();
-
+                    // OutReserve 함수를 호출하고 'connection' 객체를 매개변수로 전달합니다.
                     OutReserve(connection);
                 }
             }
         }
 
+        // In_rserve 테이블에 데이터 삽입을 위한 함수 
         private void Inreserve(SqlConnection connection)
         {
-            Dictionary<string, object> itemValues = new Dictionary<string, object>();
-
             // 각 아이템의 값을 딕셔너리에 추가
             /*
-            itemValues["Cell"] = cell;
             itemValues["PLT_IN_OUT"] = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
             itemValues["Job_Line"] = opcItemList.Find(item => item.ItemID == "Job_Line")?.Value;
             itemValues["Serial_No"] = opcItemList.Find(item => item.ItemID == "Serial_No")?.Value;
@@ -393,6 +445,7 @@ namespace Press_DB
             itemValues["LINE"] = opcItemList.Find(item => item.ItemID == "LINE")?.Value;
             itemValues["Parts_count_int_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_in_pallet")?.Value;
             itemValues["Counts"] = opcItemList.Find(item => item.ItemID == "Counts")?.Value;
+            itemValues["JobType"] = "INAUTO";
             */
 
             // itemValues["PLT_CODE"] = opcItemList.Find(item => item.ItemID == "PLT_CODE")?.Value;
@@ -402,12 +455,13 @@ namespace Press_DB
 
             string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
                                 "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, '', @Item, @Spec, @Line, '', @Max_qty, '', '', '', @State, '', @Udate, @Utime)";
-                /* PLT_CODE 처리
-                 * string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
-                                "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, @Model, @Item, @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_date, @Prod_time, @State, @Pos, @Udate, @Utime)";
-                */
+            /* PLT_CODE 처리
+             * string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
+                            "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, @Model, @Item, @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_date, @Prod_time, @State, @Pos, @Udate, @Utime)";
+            */
 
-                SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
+            // SqlCommand 개체를 만듭니다. 이 개체는 데이터베이스에 대한 쿼리를 실행하는 데 사용됩니다.
+            SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
 
                 // 딕셔너리의 값들을 SQL 매개변수에 추가
                 foreach (var kvp in itemValues)
@@ -424,14 +478,13 @@ namespace Press_DB
                 cmdInsert.ExecuteNonQuery();
             // 데이터베이스 연결 닫기
             connection.Close();
-
+            // Opc 통신에서 가져온 아이템 읽기 위해 호출할 함수.
             OpcReadItem();
         }
 
+        // Out_reserve 에 데이터 삽입 하기 위한 함수
         private void OutReserve(SqlConnection connection)
         {
-            Dictionary<string, object> itemValues = new Dictionary<string, object>();
-            // itemValues["PLT_CODE"] = opcItemList.Find(item => item.ItemID == "PLT_CODE")?.Value;
 
             // t_out_reserve 테이블에 데이터 삽입
             string insertQuery = "INSERT INTO t_out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
@@ -441,6 +494,8 @@ namespace Press_DB
              * string insertQuery = "INSERT INTO t_out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Parod_time, State, Pos, Udate, Utime)" +
                             "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, @Model, @Item, @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_date, @Prod_time, @State, @Pos, @Udate, @Utime)";
             */
+
+            // SqlCommand 개체를 만듭니다. 이 개체는 데이터베이스에 대한 쿼리를 실행하는 데 사용됩니다.
             SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
 
             // 딕셔너리의 값들을 SQL 매개변수에 추가
@@ -453,18 +508,21 @@ namespace Press_DB
             cmdInsert.ExecuteNonQuery();
             // 데이터베이스 연결 닫기
             connection.Close();
-
+            // Opc 통신에서 가져온 아이템 읽기 위해 호출할 함수.
             OpcReadItem();
         }
 
+        // OPC 항목들을 읽어오는 메서드입니다.
         private void OpcReadItem()
-        {
-            // 각각의 아이템에 대해 데이터 읽기
+        {    
+            // opcItemList에 있는 각 OPCItem에 대해 반복합니다.
             foreach (OPCItem opcItem in opcItemList)
             {
+                // 값을 저장할 변수들을 초기화합니다.
                 object value;
                 object quality;
                 object timestamp;
+                // opcItem.Read를 사용하여 OPC 서버에서 데이터를 읽어옵니다.
                 opcItem.Read(1, out value, out quality, out timestamp);
             }
         }
