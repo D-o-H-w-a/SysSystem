@@ -102,25 +102,6 @@ namespace Press_DB
                 opcItemList.Add(opcItems.AddItem("Parts_count_in_pallet", 1));
                 */
 
-                // 각각의 아이템에 대해 데이터 읽기
-                foreach (OPCItem opcItem in opcItemList)
-                {
-                    object value;
-                    object quality;
-                    object timestamp;
-                    opcItem.Read(1, out value, out quality, out timestamp);
-
-                    // 데이터 확인
-                    //if (value != null)
-                    //{
-                    //    MessageBox.Show("데이터를 성공적으로 받았습니다: " + value.ToString());
-                    //}
-                    //else
-                    //{
-                    //    MessageBox.Show("데이터를 받지 못했습니다.");
-                    //}
-                }
-
                 string callNum = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
 
 
@@ -443,6 +424,8 @@ namespace Press_DB
                 cmdInsert.ExecuteNonQuery();
             // 데이터베이스 연결 닫기
             connection.Close();
+
+            OpcReadItem();
         }
 
         private void OutReserve(SqlConnection connection)
@@ -470,6 +453,20 @@ namespace Press_DB
             cmdInsert.ExecuteNonQuery();
             // 데이터베이스 연결 닫기
             connection.Close();
+
+            OpcReadItem();
+        }
+
+        private void OpcReadItem()
+        {
+            // 각각의 아이템에 대해 데이터 읽기
+            foreach (OPCItem opcItem in opcItemList)
+            {
+                object value;
+                object quality;
+                object timestamp;
+                opcItem.Read(1, out value, out quality, out timestamp);
+            }
         }
 
         // 스레드 종료 메서드
