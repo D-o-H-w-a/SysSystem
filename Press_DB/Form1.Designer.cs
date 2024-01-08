@@ -40,14 +40,14 @@
             outBtn = new Button();
             listBox = new GroupBox();
             dataGrid = new DataGridView();
-            groupBox = new GroupBox();
-            SQLstateTxt = new TextBox();
-            inBtn = new Button();
             cellNum = new DataGridViewTextBoxColumn();
             cellState = new DataGridViewTextBoxColumn();
             scState = new DataGridViewTextBoxColumn();
             workDate = new DataGridViewTextBoxColumn();
             workTime = new DataGridViewTextBoxColumn();
+            groupBox = new GroupBox();
+            inBtn = new Button();
+            SQLstateTxt = new TextBox();
             listBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGrid).BeginInit();
             groupBox.SuspendLayout();
@@ -61,8 +61,10 @@
             OPCstateTxt.Location = new Point(422, 100);
             OPCstateTxt.Name = "OPCstateTxt";
             OPCstateTxt.ReadOnly = true;
+            OPCstateTxt.ShortcutsEnabled = false;
             OPCstateTxt.Size = new Size(164, 24);
             OPCstateTxt.TabIndex = 1;
+            OPCstateTxt.TabStop = false;
             OPCstateTxt.Text = "OPC Comm Status";
             // 
             // outBtn
@@ -125,48 +127,6 @@
             dataGrid.TabIndex = 0;
             dataGrid.TabStop = false;
             // 
-            // groupBox
-            // 
-            groupBox.BackColor = SystemColors.ActiveCaption;
-            groupBox.Controls.Add(OPCstateTxt);
-            groupBox.Controls.Add(inBtn);
-            groupBox.Controls.Add(outBtn);
-            groupBox.Controls.Add(SQLstateTxt);
-            groupBox.FlatStyle = FlatStyle.Popup;
-            groupBox.Font = new Font("맑은 고딕", 1F);
-            groupBox.Location = new Point(15, 8);
-            groupBox.Name = "groupBox";
-            groupBox.Size = new Size(755, 172);
-            groupBox.TabIndex = 2;
-            groupBox.TabStop = false;
-            // 
-            // SQLstateTxt
-            // 
-            SQLstateTxt.BackColor = SystemColors.ActiveCaption;
-            SQLstateTxt.BorderStyle = BorderStyle.None;
-            SQLstateTxt.Font = new Font("맑은 고딕", 10.8F);
-            SQLstateTxt.Location = new Point(144, 100);
-            SQLstateTxt.Name = "SQLstateTxt";
-            SQLstateTxt.ReadOnly = true;
-            SQLstateTxt.Size = new Size(164, 24);
-            SQLstateTxt.TabIndex = 1;
-            SQLstateTxt.Text = "SQL Comm Status";
-            // 
-            // inBtn
-            // 
-            inBtn.BackColor = SystemColors.HotTrack;
-            inBtn.BackgroundImage = (Image)resources.GetObject("inBtn.BackgroundImage");
-            inBtn.FlatStyle = FlatStyle.Popup;
-            inBtn.Font = new Font("맑은 고딕", 9F);
-            inBtn.ForeColor = Color.White;
-            inBtn.Location = new Point(224, 28);
-            inBtn.Name = "inBtn";
-            inBtn.Size = new Size(84, 52);
-            inBtn.TabIndex = 0;
-            inBtn.Text = "IN";
-            inBtn.UseVisualStyleBackColor = false;
-            inBtn.Click += outBtn_Click;
-            // 
             // cellNum
             // 
             cellNum.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
@@ -217,6 +177,50 @@
             workTime.Name = "workTime";
             workTime.ReadOnly = true;
             workTime.Width = 157;
+            // 
+            // groupBox
+            // 
+            groupBox.BackColor = SystemColors.ActiveCaption;
+            groupBox.Controls.Add(OPCstateTxt);
+            groupBox.Controls.Add(inBtn);
+            groupBox.Controls.Add(outBtn);
+            groupBox.Controls.Add(SQLstateTxt);
+            groupBox.FlatStyle = FlatStyle.Popup;
+            groupBox.Font = new Font("맑은 고딕", 1F);
+            groupBox.Location = new Point(15, 8);
+            groupBox.Name = "groupBox";
+            groupBox.Size = new Size(755, 172);
+            groupBox.TabIndex = 2;
+            groupBox.TabStop = false;
+            // 
+            // inBtn
+            // 
+            inBtn.BackColor = SystemColors.HotTrack;
+            inBtn.BackgroundImage = (Image)resources.GetObject("inBtn.BackgroundImage");
+            inBtn.FlatStyle = FlatStyle.Popup;
+            inBtn.Font = new Font("맑은 고딕", 9F);
+            inBtn.ForeColor = Color.White;
+            inBtn.Location = new Point(224, 28);
+            inBtn.Name = "inBtn";
+            inBtn.Size = new Size(84, 52);
+            inBtn.TabIndex = 0;
+            inBtn.Text = "IN";
+            inBtn.UseVisualStyleBackColor = false;
+            inBtn.Click += outBtn_Click;
+            // 
+            // SQLstateTxt
+            // 
+            SQLstateTxt.BackColor = SystemColors.ActiveCaption;
+            SQLstateTxt.BorderStyle = BorderStyle.None;
+            SQLstateTxt.Font = new Font("맑은 고딕", 10.8F);
+            SQLstateTxt.Location = new Point(144, 100);
+            SQLstateTxt.Name = "SQLstateTxt";
+            SQLstateTxt.ReadOnly = true;
+            SQLstateTxt.ShortcutsEnabled = false;
+            SQLstateTxt.Size = new Size(164, 24);
+            SQLstateTxt.TabIndex = 1;
+            SQLstateTxt.TabStop = false;
+            SQLstateTxt.Text = "SQL Comm Status";
             // 
             // Form1
             // 

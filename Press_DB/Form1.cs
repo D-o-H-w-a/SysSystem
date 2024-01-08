@@ -210,7 +210,7 @@ namespace Press_DB
                         t_Cell tc ON (tc.Bank = tsc.Stk_no * 2 - 1 OR tc.Bank = tsc.Stk_no * 2)
                     WHERE
                         tsc.Stk_state = 0
-                        AND tc.Cell_type >= 71112
+                        AND tc.Cell_type >= @item
                         AND tc.State = 'EMPTY'
                         AND tc.Cell NOT IN (SELECT Cell FROM t_In_reserve) -- t_In_reserve 에 tc.Cell 과 같은 Cell 존재하지 않는 것만 검색합니다.
                         AND (
@@ -369,7 +369,7 @@ namespace Press_DB
                         t_Cell tc ON (tc.Bank = tsc.Stk_no * 2 - 1 OR tc.Bank = tsc.Stk_no * 2)
                     WHERE
                         tsc.Stk_state = 0
-                        AND tc.Cell_type >= 67111
+                        AND tc.Cell_type >= @item
                         AND tc.State = 'INCOMP'
                         AND tc.Cell NOT IN (SELECT Cell FROM t_Out_reserve) -- t_Out_reserve 에 tc.Cell 과 같은 Cell 존재하지 않는 것만 검색합니다.
                         AND (
