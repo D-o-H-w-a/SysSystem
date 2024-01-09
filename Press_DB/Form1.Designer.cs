@@ -206,7 +206,7 @@
             inBtn.TabIndex = 0;
             inBtn.Text = "IN";
             inBtn.UseVisualStyleBackColor = false;
-            inBtn.Click += outBtn_Click;
+            inBtn.Click += inBtn_Click;
             // 
             // SQLstateTxt
             // 

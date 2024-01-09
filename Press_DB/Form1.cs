@@ -58,8 +58,9 @@ namespace Press_DB
         }
 
         // opc 서버와 연결하여 통신을 하며 아이템 객체들을 가져옴
-        private void opcServerJoin( int reserve ,CancellationToken cancellationToken)
+        private void opcServerJoin(int reserve, CancellationToken cancellationToken)
         {
+            /*
             // OPC 서버 연결
             opcServer = new OPCServer();
             // OPC 서버에 연결
@@ -75,6 +76,7 @@ namespace Press_DB
             opcGroup.IsSubscribed = true;
             // OPC 아이템들을 관리하는 객체를 가져옴
             opcItems = opcGroup.OPCItems;
+            */
 
             // 스레드가 실행되고 있는 동안 반복
             while (!cancellationToken.IsCancellationRequested)
@@ -134,6 +136,7 @@ namespace Press_DB
                 //        OutReserveData(cancellationToken);
                 //    }
                 //}
+                Thread.Sleep(200);
             }
         }
 
@@ -147,7 +150,7 @@ namespace Press_DB
                 {
                     // 데이터베이스 접속
                     connection.Open();
-                    
+
                     // ItemValues 딕셔너리 값을 전부 초기화
                     itemValues.Clear();
 
@@ -337,7 +340,6 @@ namespace Press_DB
                         tsc.Stk_no DESC
                 ";
                     */
-                    ;
                     string query = @"
                     DECLARE @maxStkNo INT;
                      
@@ -366,37 +368,41 @@ namespace Press_DB
                     FROM
                         t_SC_state tsc
                     LEFT JOIN
-                        t_Cell tc ON (tc.Bank = tsc.Stk_no * 2 - 1 OR tc.Bank = tsc.Stk_no * 2)
+                        t_Cell tc ON (tc.Bank = tsc.Stk_no * 2 OR tc.Bank = tsc.Stk_no * 2-1)
                     WHERE
                         tsc.Stk_state = 0
-                        AND tc.Cell_type >= @item
+                        AND tc.Cell_type >= 67111
                         AND tc.State = 'INCOMP'
                         AND tc.Cell NOT IN (SELECT Cell FROM t_Out_reserve) -- t_Out_reserve 에 tc.Cell 과 같은 Cell 존재하지 않는 것만 검색합니다.
                         AND (
-                        (tsc.Stk_no >= @lastSearchValue AND tsc.Stk_no <= @maxStkNo) -- 이전 검색값 이상, 최대 값 이하인 값들을 검색합니다.
-                        OR (tsc.Stk_no <= @lastSearchValue) -- 마지막 검색값 이하인 값들을 검색합니다.
+                            (@lastSearchValue <> 0 AND (
+                            (tsc.Stk_no <= @maxStkNo AND tsc.Stk_no >= @lastSearchValue) -- 이전 검색값 이상, 최대 값 이하인 값들을 검색합니다.
+                            OR (tsc.Stk_no <= @lastSearchValue) -- 마지막 검색값 이하인 값들을 검색합니다.
+                            ))
                         )
                     ORDER BY
                         tsc.Stk_no DESC
                 ";
 
                     // OPC 항목 리스트에서 ItemID가 "Item"인 값을 찾아 item 변수에 할당합니다.
-                    string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
-
+                    //string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
                     // SqlCommand 개체를 생성하고 쿼리와 연결을 설정합니다.
                     SqlCommand command = new SqlCommand(query, connection);
                     // @lastSearchValue와 @item 매개변수에 값을 할당합니다.
                     command.Parameters.AddWithValue("@lastSearchValue", lastSearchValue);
-                    command.Parameters.AddWithValue("@item", item);
+                    // command.Parameters.AddWithValue("@item", item);
                     // 쿼리를 실행하고 SqlDataReader로 결과를 가져옵니다.
                     SqlDataReader reader = command.ExecuteReader();
                     // SqlDataReader를 반복하여 각 행을 처리합니다.
                     while (reader.Read())
-                    { 
+                    {
                         // 각 열의 값을 변수에 할당합니다.
                         int stkState = Convert.ToInt32(reader["Stk_state"]);
                         string cell = reader["Cell"].ToString();
-                        
+                        // "Stk_no" 열의 값을 가져와 정수로 변환한 후 lastSearchValue 변수에 할당합니다.
+                        lastSearchValue = Convert.ToInt32(reader["Stk_no"]);
+                        Console.WriteLine(lastSearchValue);
+                        /*
                         // 각 열의 값을 itemValues 딕셔너리에 할당합니다.
                         itemValues["Cell"] = cell;
                         itemValues["item"] = item;
@@ -414,6 +420,24 @@ namespace Press_DB
                         itemValues["Pos"] = reader["Pos"].ToString();
                         itemValues["Serial_no"] = Convert.ToDouble(reader["Serial_no"]);
                         itemValues["JobType"] = "OUTAUTO";
+                        */
+                        itemValues["Cell"] = cell;
+                        itemValues["PLT_IN_OUT"] = 2;
+                        itemValues["Job_Line"] = 201;
+                        itemValues["Serial_No"] = "23110";
+                        itemValues["Pal_no"] = "6";
+                        itemValues["Pal_type"] = "4";
+                        itemValues["Car_Type"] = "2";
+                        itemValues["Item"] = "67111";
+                        itemValues["Spec"] = "1";
+                        itemValues["LINE"] = "2";
+                        itemValues["Max_qty"] = "2";
+                        itemValues["Counts"] = "3";
+                        itemValues["JobType"] = "OUTAUTO";
+                        itemValues["State"] = "OUTCOMP";
+                        itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
+                        itemValues["Utime"] = DateTime.Now.ToString("HH:mm:ss");
+
 
                         // 만약 stkState가 0이면 ListView 컨트롤을 업데이트합니다.
                         if (stkState == 0)
@@ -451,6 +475,23 @@ namespace Press_DB
             // itemValues["PLT_CODE"] = opcItemList.Find(item => item.ItemID == "PLT_CODE")?.Value;
             // itemValues["Parts_count_in_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_in_pallet")?.Value;
 
+            itemValues["PLT_IN_OUT"] = 1;
+            itemValues["Job_Line"] = 201;
+            itemValues["Serial_No"] = "2311010001";
+            itemValues["Pal_no"] = "6";
+            itemValues["Pal_type"] = "4";
+            itemValues["Car_Type"] = "2";
+            itemValues["Item"] = "67111";
+            itemValues["Spec"] = "1";
+            itemValues["LINE"] = "2";
+            itemValues["Max_qty"] = "2";
+            itemValues["Counts"] = "3";
+            itemValues["JobType"] = "INAUTO";
+            itemValues["State"] = "INCOMP";
+            itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
+            itemValues["Utime"] = DateTime.Now.ToString("HH:mm:ss");
+
+
             // t_In_reserve 테이블에 데이터 삽입
 
             string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
@@ -459,23 +500,22 @@ namespace Press_DB
              * string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
                             "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, @Model, @Item, @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_date, @Prod_time, @State, @Pos, @Udate, @Utime)";
             */
-
             // SqlCommand 개체를 만듭니다. 이 개체는 데이터베이스에 대한 쿼리를 실행하는 데 사용됩니다.
             SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
 
-                // 딕셔너리의 값들을 SQL 매개변수에 추가
-                foreach (var kvp in itemValues)
+            // 딕셔너리의 값들을 SQL 매개변수에 추가
+            foreach (var kvp in itemValues)
+            {
+                if (!cmdInsert.Parameters.Contains("@" + kvp.Key))
                 {
-                    if (!cmdInsert.Parameters.Contains("@" + kvp.Key))
-                    {
-                        object valueToInsert = kvp.Value != null ? kvp.Value : " "; // 키가 없거나 값이 null인 경우 공백 문자열로 대체
+                    object valueToInsert = kvp.Value != null ? kvp.Value : " "; // 키가 없거나 값이 null인 경우 공백 문자열로 대체
 
-                        cmdInsert.Parameters.AddWithValue("@" + kvp.Key, valueToInsert);
-                    }
+                    cmdInsert.Parameters.AddWithValue("@" + kvp.Key, valueToInsert);
                 }
+            }
 
-                // 쿼리 실행
-                cmdInsert.ExecuteNonQuery();
+            // 쿼리 실행
+            cmdInsert.ExecuteNonQuery();
             // 데이터베이스 연결 닫기
             connection.Close();
             // Opc 통신에서 가져온 아이템 읽기 위해 호출할 함수.
@@ -487,8 +527,8 @@ namespace Press_DB
         {
 
             // t_out_reserve 테이블에 데이터 삽입
-            string insertQuery = "INSERT INTO t_out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Udate, Utime)" +
-                            "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, @Model, @Item, @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_date, @Prod_time, @State, @Pos, @Udate, @Utime)";
+            string insertQuery = "INSERT INTO t_Out_reserve (JobType, Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
+                            "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, '', @Item, @Spec, @Line, '', @Max_qty, '', '', '', @State, '', '', @Serial_no, @Job_line, @Udate, @Utime)";
 
             /* PLT_CODE 처리
              * string insertQuery = "INSERT INTO t_out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Parod_time, State, Pos, Udate, Utime)" +
@@ -509,12 +549,12 @@ namespace Press_DB
             // 데이터베이스 연결 닫기
             connection.Close();
             // Opc 통신에서 가져온 아이템 읽기 위해 호출할 함수.
-            OpcReadItem();
+            //OpcReadItem();
         }
 
         // OPC 항목들을 읽어오는 메서드입니다.
         private void OpcReadItem()
-        {    
+        {
             // opcItemList에 있는 각 OPCItem에 대해 반복합니다.
             foreach (OPCItem opcItem in opcItemList)
             {
