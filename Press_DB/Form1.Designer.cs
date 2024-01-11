@@ -31,23 +31,23 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             OPCstateTxt = new TextBox();
             outBtn = new Button();
             listBox = new GroupBox();
             dataGrid = new DataGridView();
-            cellNum = new DataGridViewTextBoxColumn();
-            cellState = new DataGridViewTextBoxColumn();
-            scState = new DataGridViewTextBoxColumn();
-            workDate = new DataGridViewTextBoxColumn();
-            workTime = new DataGridViewTextBoxColumn();
             groupBox = new GroupBox();
             inBtn = new Button();
             SQLstateTxt = new TextBox();
+            workTime = new DataGridViewTextBoxColumn();
+            workDate = new DataGridViewTextBoxColumn();
+            scState = new DataGridViewTextBoxColumn();
+            cellState = new DataGridViewTextBoxColumn();
+            cellNum = new DataGridViewTextBoxColumn();
             listBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGrid).BeginInit();
             groupBox.SuspendLayout();
@@ -127,57 +127,6 @@
             dataGrid.TabIndex = 0;
             dataGrid.TabStop = false;
             // 
-            // cellNum
-            // 
-            cellNum.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            cellNum.DefaultCellStyle = dataGridViewCellStyle2;
-            cellNum.HeaderText = "Cell Num";
-            cellNum.MinimumWidth = 6;
-            cellNum.Name = "cellNum";
-            cellNum.ReadOnly = true;
-            cellNum.Width = 122;
-            // 
-            // cellState
-            // 
-            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            cellState.DefaultCellStyle = dataGridViewCellStyle3;
-            cellState.HeaderText = "Result";
-            cellState.MinimumWidth = 6;
-            cellState.Name = "cellState";
-            cellState.ReadOnly = true;
-            cellState.Width = 158;
-            // 
-            // scState
-            // 
-            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            scState.DefaultCellStyle = dataGridViewCellStyle4;
-            scState.HeaderText = "Crane State";
-            scState.MinimumWidth = 6;
-            scState.Name = "scState";
-            scState.ReadOnly = true;
-            scState.Width = 157;
-            // 
-            // workDate
-            // 
-            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            workDate.DefaultCellStyle = dataGridViewCellStyle5;
-            workDate.HeaderText = "Work Date";
-            workDate.MinimumWidth = 6;
-            workDate.Name = "workDate";
-            workDate.ReadOnly = true;
-            workDate.Width = 158;
-            // 
-            // workTime
-            // 
-            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            workTime.DefaultCellStyle = dataGridViewCellStyle6;
-            workTime.HeaderText = "Work Time";
-            workTime.MinimumWidth = 6;
-            workTime.Name = "workTime";
-            workTime.ReadOnly = true;
-            workTime.Width = 157;
-            // 
             // groupBox
             // 
             groupBox.BackColor = SystemColors.ActiveCaption;
@@ -222,6 +171,57 @@
             SQLstateTxt.TabStop = false;
             SQLstateTxt.Text = "SQL Comm Status";
             // 
+            // workTime
+            // 
+            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            workTime.DefaultCellStyle = dataGridViewCellStyle6;
+            workTime.HeaderText = "Work Time";
+            workTime.MinimumWidth = 6;
+            workTime.Name = "workTime";
+            workTime.ReadOnly = true;
+            workTime.Width = 157;
+            // 
+            // workDate
+            // 
+            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            workDate.DefaultCellStyle = dataGridViewCellStyle5;
+            workDate.HeaderText = "Work Date";
+            workDate.MinimumWidth = 6;
+            workDate.Name = "workDate";
+            workDate.ReadOnly = true;
+            workDate.Width = 158;
+            // 
+            // scState
+            // 
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            scState.DefaultCellStyle = dataGridViewCellStyle4;
+            scState.HeaderText = "Crane State";
+            scState.MinimumWidth = 6;
+            scState.Name = "scState";
+            scState.ReadOnly = true;
+            scState.Width = 157;
+            // 
+            // cellState
+            // 
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            cellState.DefaultCellStyle = dataGridViewCellStyle3;
+            cellState.HeaderText = "Result";
+            cellState.MinimumWidth = 6;
+            cellState.Name = "cellState";
+            cellState.ReadOnly = true;
+            cellState.Width = 158;
+            // 
+            // cellNum
+            // 
+            cellNum.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            cellNum.DefaultCellStyle = dataGridViewCellStyle2;
+            cellNum.HeaderText = "Cell Num";
+            cellNum.MinimumWidth = 6;
+            cellNum.Name = "cellNum";
+            cellNum.ReadOnly = true;
+            cellNum.Width = 122;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(9F, 20F);
@@ -245,11 +245,11 @@
         private DataGridView dataGrid;
         private GroupBox groupBox;
         private TextBox SQLstateTxt;
+        private Button inBtn;
         private DataGridViewTextBoxColumn cellNum;
         private DataGridViewTextBoxColumn cellState;
         private DataGridViewTextBoxColumn scState;
         private DataGridViewTextBoxColumn workDate;
         private DataGridViewTextBoxColumn workTime;
-        private Button inBtn;
     }
 }

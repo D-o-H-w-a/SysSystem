@@ -189,6 +189,7 @@ namespace Press_DB
                         OR (tsc.Stk_no <= @lastSearchValue) -- 마지막 검색값 이하인 값들을 검색합니다.
                         )
                     ORDER BY
+                        tc.Bank DESC,
                         tsc.Stk_no DESC
                     ";
                     */
@@ -221,6 +222,7 @@ namespace Press_DB
                         OR (tsc.Stk_no <= @lastSearchValue) -- 마지막 검색값 이하인 값들을 검색합니다.
                         )
                     ORDER BY
+                        tc.Bank DESC,
                         tsc.Stk_no DESC
                     ";
 
@@ -337,6 +339,7 @@ namespace Press_DB
                         OR (tsc.Stk_no <= @lastSearchValue) -- 마지막 검색값 이하인 값들을 검색합니다.
                         )
                     ORDER BY
+                        tc.Bank DESC,
                         tsc.Stk_no DESC
                 ";
                     */
@@ -375,12 +378,13 @@ namespace Press_DB
                         AND tc.State = 'INCOMP'
                         AND tc.Cell NOT IN (SELECT Cell FROM t_Out_reserve) -- t_Out_reserve 에 tc.Cell 과 같은 Cell 존재하지 않는 것만 검색합니다.
                         AND (
-                            (@lastSearchValue <> 0 AND (
+                            (
                             (tsc.Stk_no <= @maxStkNo AND tsc.Stk_no >= @lastSearchValue) -- 이전 검색값 이상, 최대 값 이하인 값들을 검색합니다.
                             OR (tsc.Stk_no <= @lastSearchValue) -- 마지막 검색값 이하인 값들을 검색합니다.
-                            ))
+                            )
                         )
                     ORDER BY
+                        tc.Bank DESC,
                         tsc.Stk_no DESC
                 ";
 
@@ -401,7 +405,7 @@ namespace Press_DB
                         string cell = reader["Cell"].ToString();
                         // "Stk_no" 열의 값을 가져와 정수로 변환한 후 lastSearchValue 변수에 할당합니다.
                         lastSearchValue = Convert.ToInt32(reader["Stk_no"]);
-                        Console.WriteLine(lastSearchValue);
+
                         /*
                         // 각 열의 값을 itemValues 딕셔너리에 할당합니다.
                         itemValues["Cell"] = cell;
