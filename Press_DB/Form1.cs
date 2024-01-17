@@ -54,34 +54,45 @@ namespace Press_DB
             // 스레드 시작
             opcThread = new Thread(() => opcServerJoin(reserve, cancellationToken));
             opcThread.Start();
-
         }
 
         // opc 서버와 연결하여 통신을 하며 아이템 객체들을 가져옴
         private void opcServerJoin(int reserve, CancellationToken cancellationToken)
         {
-            /*
-            // OPC 서버 연결
-            opcServer = new OPCServer();
-            // OPC 서버에 연결
-            opcServer.Connect(opcServerIP);
+            
+            try
+            {
+                
+                // OPC 서버 연결
+                opcServer = new OPCServer();
+                // OPC 서버에 연결
+                opcServer.Connect(opcServerIP);
 
-            // OPC 그룹 생성 및 설정
-            opcGroups = opcServer.OPCGroups; // opc 서버에서 그룹을 관리하는 객체를 가져옴
-                                             // 이름에 맞는 OPC 그룹을 생성
-            opcGroup = opcGroups.Add("YourGroup");
-            // OPC 그룹을 활성화
-            opcGroup.IsActive = true;
-            // OPC 그룹을 구독 모드로 설정하여 실시간 데이터 수집
-            opcGroup.IsSubscribed = true;
-            // OPC 아이템들을 관리하는 객체를 가져옴
-            opcItems = opcGroup.OPCItems;
-            */
+                // OPC 그룹 생성 및 설정
+                opcGroups = opcServer.OPCGroups; // opc 서버에서 그룹을 관리하는 객체를 가져옴
+                                                 // 이름에 맞는 OPC 그룹을 생성
+                opcGroup = opcGroups.Add("YourGroup");
+                // OPC 그룹을 활성화
+                opcGroup.IsActive = true;
+                // OPC 그룹을 구독 모드로 설정하여 실시간 데이터 수집
+                opcGroup.IsSubscribed = true;
+                // OPC 아이템들을 관리하는 객체를 가져옴
+                opcItems = opcGroup.OPCItems;
+                
 
+                // OPC 에 정상 연결되었다면 텍스트 색상을 파랑색으로 변경
+                OPCstateTxt.ForeColor = Color.Blue;
+            }
+            
+            catch (Exception ex)
+            {
+                // OPC 접속 에러가 날 시 텍스트 색상을 빨간색으로 변경하고 메세지 박스를 통해 에러를 표시합니다.
+                SQLstateTxt.ForeColor = Color.Red;
+                MessageBox.Show(ex.ToString());
+            }
             // 스레드가 실행되고 있는 동안 반복
             while (!cancellationToken.IsCancellationRequested)
             {
-                /*
                 // item 사용
                 opcItemList.Add(opcItems.AddItem("PLT_IN_OUT", 1));
                 opcItemList.Add(opcItems.AddItem("Job_Line", 1));
@@ -94,7 +105,7 @@ namespace Press_DB
                 opcItemList.Add(opcItems.AddItem("LINE", 1));
                 opcItemList.Add(opcItems.AddItem("Parts_count_in_pallet", 1));
                 opcItemList.Add(opcItems.AddItem("Counts", 1));
-                */
+
 
                 /* PLT_CODE 사용
 
@@ -110,32 +121,32 @@ namespace Press_DB
                 // string 형태 callNum 변수에 opcItemList 에서 PLT_IN_OUT 키의 값을 callNum 에 전달
                 string callNum = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
 
-                // reserve 값이 1 일시 출고 함수 처리
-                if (reserve == 1)
-                {
-                    InReserveData(cancellationToken);
-                }
-                // callNum 값이 2 일시 출고 함수 처리
-                else if (reserve == 2)
-                {
-                    OutReserveData(cancellationToken);
-                }
-
-
-                // PLT_IN_OUT 요청 번호를 받을 int 형 변수 callNum
-                //if (!string.IsNullOrEmpty(callNum))
+                //// reserve 값이 1 일시 출고 함수 처리
+                //if (reserve == 1)
                 //{
-                //    // callNum 값이 1 일시 입고 함수 처리
-                //    if ( int.Parse(callNum) == 1)
-                //    {
-                //        InReserveData(cancellationToken);
-                //    }
-                //    // callNum 값이 2 일시 출고 함수 처리
-                //    else if (int.Parse(callNum) == 2)
-                //    {
-                //        OutReserveData(cancellationToken);
-                //    }
+                //    InReserveData(cancellationToken);
                 //}
+                //// callNum 값이 2 일시 출고 함수 처리
+                //else if (reserve == 2)
+                //{
+                //    OutReserveData(cancellationToken);
+                //}
+
+
+                //PLT_IN_OUT 요청 번호를 받을 int 형 변수 callNum
+                if (!string.IsNullOrEmpty(callNum))
+                {
+                    // callNum 값이 1 일시 입고 함수 처리
+                    if (int.Parse(callNum) == 1)
+                    {
+                        InReserveData(cancellationToken);
+                    }
+                    // callNum 값이 2 일시 출고 함수 처리
+                    else if (int.Parse(callNum) == 2)
+                    {
+                        OutReserveData(cancellationToken);
+                    }
+                }
                 Thread.Sleep(200);
             }
         }
@@ -267,7 +278,7 @@ namespace Press_DB
 
                 catch (Exception ex)
                 {
-                    // SQL 에러가 접속 에러가 날 시 텍스트 색상을 빨간색으로 변경하고 메세지 박스를 통해 에러를 표시합니다.
+                    // SQL 접속 에러가 날 시 텍스트 색상을 빨간색으로 변경하고 메세지 박스를 통해 에러를 표시합니다.
                     SQLstateTxt.ForeColor = Color.Red;
                     MessageBox.Show(ex.ToString());
                 }
@@ -291,14 +302,16 @@ namespace Press_DB
 
             //itemValues["Item"] = opcItems.AddItem("Item", 1);
             //opcItemList.Add(opcItems.AddItem("item", 1));
-
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
 
                     itemValues.Clear();
+
+                    // SQL 에 정상 연결되었다면 텍스트 색상을 파랑색으로 변경
+                    SQLstateTxt.ForeColor = Color.Blue;
                     //string Code = opcItemList.Find(pltCode => pltCode.ItemID == "PLT_CODE").ToString();
                     /*
                     string query = @"
@@ -389,7 +402,7 @@ namespace Press_DB
                 ";
 
                     // OPC 항목 리스트에서 ItemID가 "Item"인 값을 찾아 item 변수에 할당합니다.
-                    //string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
+                    string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
                     // SqlCommand 개체를 생성하고 쿼리와 연결을 설정합니다.
                     SqlCommand command = new SqlCommand(query, connection);
                     // @lastSearchValue와 @item 매개변수에 값을 할당합니다.
@@ -406,7 +419,7 @@ namespace Press_DB
                         // "Stk_no" 열의 값을 가져와 정수로 변환한 후 lastSearchValue 변수에 할당합니다.
                         lastSearchValue = Convert.ToInt32(reader["Stk_no"]);
 
-                        /*
+                        
                         // 각 열의 값을 itemValues 딕셔너리에 할당합니다.
                         itemValues["Cell"] = cell;
                         itemValues["item"] = item;
@@ -424,23 +437,23 @@ namespace Press_DB
                         itemValues["Pos"] = reader["Pos"].ToString();
                         itemValues["Serial_no"] = Convert.ToDouble(reader["Serial_no"]);
                         itemValues["JobType"] = "OUTAUTO";
-                        */
-                        itemValues["Cell"] = cell;
-                        itemValues["PLT_IN_OUT"] = 2;
-                        itemValues["Job_Line"] = 201;
-                        itemValues["Serial_No"] = "23110";
-                        itemValues["Pal_no"] = "6";
-                        itemValues["Pal_type"] = "4";
-                        itemValues["Car_Type"] = "2";
-                        itemValues["Item"] = "67111";
-                        itemValues["Spec"] = "1";
-                        itemValues["LINE"] = "2";
-                        itemValues["Max_qty"] = "2";
-                        itemValues["Counts"] = "3";
-                        itemValues["JobType"] = "OUTAUTO";
-                        itemValues["State"] = "OUTCOMP";
-                        itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
-                        itemValues["Utime"] = DateTime.Now.ToString("HH:mm:ss");
+                        
+                        //itemValues["Cell"] = cell;
+                        //itemValues["PLT_IN_OUT"] = 2;
+                        //itemValues["Job_Line"] = 201;
+                        //itemValues["Serial_No"] = "23110";
+                        //itemValues["Pal_no"] = "6";
+                        //itemValues["Pal_type"] = "4";
+                        //itemValues["Car_Type"] = "2";
+                        //itemValues["Item"] = "67111";
+                        //itemValues["Spec"] = "1";
+                        //itemValues["LINE"] = "2";
+                        //itemValues["Max_qty"] = "2";
+                        //itemValues["Counts"] = "3";
+                        //itemValues["JobType"] = "OUTAUTO";
+                        //itemValues["State"] = "OUTCOMP";
+                        //itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
+                        //itemValues["Utime"] = DateTime.Now.ToString("HH:mm:ss");
 
 
                         // 만약 stkState가 0이면 ListView 컨트롤을 업데이트합니다.
@@ -455,13 +468,19 @@ namespace Press_DB
                     OutReserve(connection);
                 }
             }
+            catch (Exception ex)
+            {
+                // SQL 접속 에러가 날 시 텍스트 색상을 빨간색으로 변경하고 메세지 박스를 통해 에러를 표시합니다.
+                SQLstateTxt.ForeColor = Color.Red;
+                MessageBox.Show(ex.ToString());
+            }
         }
 
         // In_rserve 테이블에 데이터 삽입을 위한 함수 
         private void Inreserve(SqlConnection connection)
         {
             // 각 아이템의 값을 딕셔너리에 추가
-            /*
+            
             itemValues["PLT_IN_OUT"] = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
             itemValues["Job_Line"] = opcItemList.Find(item => item.ItemID == "Job_Line")?.Value;
             itemValues["Serial_No"] = opcItemList.Find(item => item.ItemID == "Serial_No")?.Value;
@@ -474,26 +493,26 @@ namespace Press_DB
             itemValues["Parts_count_int_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_in_pallet")?.Value;
             itemValues["Counts"] = opcItemList.Find(item => item.ItemID == "Counts")?.Value;
             itemValues["JobType"] = "INAUTO";
-            */
+            
 
             // itemValues["PLT_CODE"] = opcItemList.Find(item => item.ItemID == "PLT_CODE")?.Value;
             // itemValues["Parts_count_in_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_in_pallet")?.Value;
 
-            itemValues["PLT_IN_OUT"] = 1;
-            itemValues["Job_Line"] = 201;
-            itemValues["Serial_No"] = "2311010001";
-            itemValues["Pal_no"] = "6";
-            itemValues["Pal_type"] = "4";
-            itemValues["Car_Type"] = "2";
-            itemValues["Item"] = "67111";
-            itemValues["Spec"] = "1";
-            itemValues["LINE"] = "2";
-            itemValues["Max_qty"] = "2";
-            itemValues["Counts"] = "3";
-            itemValues["JobType"] = "INAUTO";
-            itemValues["State"] = "INCOMP";
-            itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
-            itemValues["Utime"] = DateTime.Now.ToString("HH:mm:ss");
+            //itemValues["PLT_IN_OUT"] = 1;
+            //itemValues["Job_Line"] = 201;
+            //itemValues["Serial_No"] = "2311010001";
+            //itemValues["Pal_no"] = "6";
+            //itemValues["Pal_type"] = "4";
+            //itemValues["Car_Type"] = "2";
+            //itemValues["Item"] = "67111";
+            //itemValues["Spec"] = "1";
+            //itemValues["LINE"] = "2";
+            //itemValues["Max_qty"] = "2";
+            //itemValues["Counts"] = "3";
+            //itemValues["JobType"] = "INAUTO";
+            //itemValues["State"] = "INCOMP";
+            //itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
+            //itemValues["Utime"] = DateTime.Now.ToString("HH:mm:ss");
 
 
             // t_In_reserve 테이블에 데이터 삽입
@@ -600,14 +619,14 @@ namespace Press_DB
             }
         }
 
-        private void inBtn_Click(object sender, EventArgs e)
-        {
-            StartThread(1);
-        }
-
         private void outBtn_Click(object sender, EventArgs e)
         {
             StartThread(2);
+        }
+
+        private void inBtn_Click(object sender, EventArgs e)
+        {
+            StartThread(1);
         }
     }
 }
