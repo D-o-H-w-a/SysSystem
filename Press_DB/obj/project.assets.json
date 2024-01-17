@@ -475,11 +475,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\강재현\\Documents\\GitHub\\SYSSystem\\Press_DB\\Press_DB.csproj",
+      "projectUniqueName": "C:\\Users\\강재현\\Documents\\GitHub\\SysSystem\\Press_DB\\Press_DB.csproj",
       "projectName": "Press_DB",
-      "projectPath": "C:\\Users\\강재현\\Documents\\GitHub\\SYSSystem\\Press_DB\\Press_DB.csproj",
+      "projectPath": "C:\\Users\\강재현\\Documents\\GitHub\\SysSystem\\Press_DB\\Press_DB.csproj",
       "packagesPath": "C:\\Users\\강재현\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\강재현\\Documents\\GitHub\\SYSSystem\\Press_DB\\obj\\",
+      "outputPath": "C:\\Users\\강재현\\Documents\\GitHub\\SysSystem\\Press_DB\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\강재현\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -541,7 +541,7 @@
             "privateAssets": "none"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.101/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

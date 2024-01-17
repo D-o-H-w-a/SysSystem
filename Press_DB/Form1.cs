@@ -36,6 +36,7 @@ namespace Press_DB
         {
             InitializeComponent();
             // 스레드 시작 메소드 호출
+            StartThread();
         }
 
         // 데이터베이스 연결 문자열
@@ -43,7 +44,7 @@ namespace Press_DB
         private string opcServerIP = ConfigurationManager.AppSettings["OPCServerIP"];
 
         // 스레드 시작부분
-        private void StartThread(int reserve)
+        private void StartThread(/*int reserve*/)
         {
             // CancellationTokenSource 생성
             cancellationTokenSource = new CancellationTokenSource();
@@ -52,12 +53,12 @@ namespace Press_DB
             CancellationToken cancellationToken = cancellationTokenSource.Token;
 
             // 스레드 시작
-            opcThread = new Thread(() => opcServerJoin(reserve, cancellationToken));
+            opcThread = new Thread(() => opcServerJoin(/*reserve,*/ cancellationToken));
             opcThread.Start();
         }
 
         // opc 서버와 연결하여 통신을 하며 아이템 객체들을 가져옴
-        private void opcServerJoin(int reserve, CancellationToken cancellationToken)
+        private void opcServerJoin(/*int reserve,*/ CancellationToken cancellationToken)
         {
             
             try
@@ -71,7 +72,7 @@ namespace Press_DB
                 // OPC 그룹 생성 및 설정
                 opcGroups = opcServer.OPCGroups; // opc 서버에서 그룹을 관리하는 객체를 가져옴
                                                  // 이름에 맞는 OPC 그룹을 생성
-                opcGroup = opcGroups.Add("YourGroup");
+                opcGroup = opcGroups.Add("OPCGroupName");
                 // OPC 그룹을 활성화
                 opcGroup.IsActive = true;
                 // OPC 그룹을 구독 모드로 설정하여 실시간 데이터 수집
@@ -621,12 +622,12 @@ namespace Press_DB
 
         private void outBtn_Click(object sender, EventArgs e)
         {
-            StartThread(2);
+            //StartThread(2);
         }
 
         private void inBtn_Click(object sender, EventArgs e)
         {
-            StartThread(1);
+            //StartThread(1);
         }
     }
 }
