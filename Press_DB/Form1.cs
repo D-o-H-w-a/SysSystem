@@ -1,11 +1,6 @@
-using System;
-using System.Threading;
-using System.Windows.Forms;
+using OPCAutomation;
 using System.Configuration;
 using System.Data.SqlClient;
-using OPCAutomation;
-using static System.Windows.Forms.AxHost;
-using System.Diagnostics;
 
 namespace Press_DB
 {
@@ -134,7 +129,7 @@ namespace Press_DB
 
 
             // 오른쪽 맵 읽기.
-            opcItems.AddItem("[interface]PLC_WMS.Job_Line",2);
+            opcItems.AddItem("[interface]PLC_WMS.Job_Line", 2);
             opcItems.AddItem("[interface]PLC_WMS.PLT_In_Out", 2);
             opcItems.AddItem("[interface]PLC_WMS.Serial_No", 2);
             opcItems.AddItem("[interface]PLC_WMS.PLT_Number", 2);
@@ -178,7 +173,7 @@ namespace Press_DB
                     opcItem.Read(2, out value, out quality, out timestamp);
 
                     // string 형태로 변환한 object quality 의 값이 "0"(Good) 일 때 receiveItem List 형태의 OPCITEM 에 opcitem 저장.
-                    if (quality.ToString() == "0") 
+                    if (quality.ToString() == "0")
                     {
                         receiveItem.Add(opcItem);
                     }
@@ -186,10 +181,10 @@ namespace Press_DB
 
 
                 //// 왼쪽 테이블에 데이터가 존재하지 않을 때 오른쪽 테이블에 데이터가 있을 때 오른쪽 테이블을 지운다.
-               foreach(OPCItem opcItem in receiveItem)
+                foreach (OPCItem opcItem in receiveItem)
                 {
                     // 왼쪽 테이블의 opcItem value 값을 object value 에 저장.
-                    object value =  opcItem.Value;
+                    object value = opcItem.Value;
 
                     // 왼쪽 테이블의 값을 오른쪽 테이블 ItemID를 이용해서 해당 값을 찾아옴. 오른쪽 테이블 ItemID 가 왼쪽 테이블에는 존재 하지 않는 ItemID 면 null 값을 받아옴.
                     object value2 = sendItem.Find(item => item.ItemID == opcItem.ItemID)?.Value;
@@ -216,8 +211,9 @@ namespace Press_DB
                 // callNum 값이 1 일시 입고 함수 처리
                 if (int.Parse(pltINout) == 1)
                 {
-                    if (sendData(cancellationToken)){
-                        
+                    if (sendData(cancellationToken))
+                    {
+
                         // Inreserve 함수를 호출하고 'connection' 객체를 매개변수로 전달합니다.
 
                         if (Inreserve())
@@ -353,21 +349,21 @@ namespace Press_DB
                         tsc.Stk_no DESC
                     ";
 
-                    
+
 
                     //// 스테커 상태를 전체 다 읽어온다.
                     ///
 
 
-                    for(int i=0; i < 8; i++)
+                    for (int i = 0; i < 8; i++)
                     {
-                    /// 마지막 호기가 6호기 일 때 5호기 부터 조회를 한다.
-                    /// 호기 x 2 와 마지막 호기 x 2 - 1 값을 계산한다.
-                    
-                    
-                    /// 스테커 상태가 만족하면 cell 이 구해지면 cell 정보 저장 후 break.
+                        /// 마지막 호기가 6호기 일 때 5호기 부터 조회를 한다.
+                        /// 호기 x 2 와 마지막 호기 x 2 - 1 값을 계산한다.
+
+
+                        /// 스테커 상태가 만족하면 cell 이 구해지면 cell 정보 저장 후 break.
                     }
-                    
+
 
 
                     // opcItemList에서 ItemID가 "Item"인 항목을 찾아 해당 값(Value)을 가져옵니다.
@@ -402,7 +398,7 @@ namespace Press_DB
                             // 셀 정보, "정상 입고"(Normal Incoming), "정상"(Normal), 그리고 현재 날짜와 시간을 특정 형식으로 전달합니다.
                             UpdateListView(cell, "정상 입고", "정상", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                         }
-                       
+
                     }
                     // 모든 행을 반복한 후 SqlDataReader를 닫습니다.
                     reader.Close();
@@ -554,7 +550,7 @@ namespace Press_DB
                         // "Stk_no" 열의 값을 가져와 정수로 변환한 후 lastSearchValue 변수에 할당합니다.
                         lastSearchValue = Convert.ToInt32(reader["Stk_no"]);
 
-                        
+
                         // 각 열의 값을 itemValues 딕셔너리에 할당합니다.
                         itemValues["Cell"] = cell;
                         itemValues["item"] = item;
@@ -572,7 +568,7 @@ namespace Press_DB
                         itemValues["Pos"] = reader["Pos"].ToString();
                         itemValues["Serial_no"] = Convert.ToDouble(reader["Serial_no"]);
                         itemValues["JobType"] = "OUTAUTO";
-                        
+
                         //itemValues["Cell"] = cell;
                         //itemValues["PLT_IN_OUT"] = 2;
                         //itemValues["Job_Line"] = 201;
@@ -613,7 +609,7 @@ namespace Press_DB
         private bool Inreserve()
         {
             // 각 아이템의 값을 딕셔너리에 추가
-            
+
             itemValues["PLT_IN_OUT"] = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
             itemValues["Job_Line"] = opcItemList.Find(item => item.ItemID == "Job_Line")?.Value;
             itemValues["Serial_No"] = opcItemList.Find(item => item.ItemID == "Serial_No")?.Value;
@@ -626,7 +622,7 @@ namespace Press_DB
             itemValues["Parts_count_int_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_in_pallet")?.Value;
             itemValues["Counts"] = opcItemList.Find(item => item.ItemID == "Counts")?.Value;
             itemValues["JobType"] = "INAUTO";
-            
+
 
             // itemValues["PLT_CODE"] = opcItemList.Find(item => item.ItemID == "PLT_CODE")?.Value;
             // itemValues["Parts_count_in_pallet"] = opcItemList.Find(item => item.ItemID == "Parts_count_in_pallet")?.Value;
