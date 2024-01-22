@@ -25,12 +25,19 @@ namespace Press_DB
         private Thread opcThread;
         // 스레드를 중지시키는데 사용되는 토큰을 생성하는 CancellationTokenSource
         private CancellationTokenSource cancellationTokenSource;
-        // opc item 값을 담아올 List  변수 선언
-        private List<OPCItem> opcItemList = new List<OPCItem>();
         // tsc.Stk_no 의 최종 검색 값을 저장할 변수 선언
         private int lastSearchValue;
+        // [PLC->PC] 각각의 OPCItem 을 List 에 담아서 저장하기 위해 선언한 변수.
+        private List<OPCItem> sendItem = new List<OPCItem>();
+        // [PC->PLC] 각각의 OPCItem 을 List 에 담아서 저장하기 위해 선언한 변수.
+        private List<OPCItem> receiveItem = new List<OPCItem>();
         // Data 들을 저장할 리스트 형태로 저장할 딕셔너리 변수.
         private Dictionary<string, object> itemValues = new Dictionary<string, object>();
+
+        /*
+        // opc item 값을 담아올 List  변수 선언
+        private List<OPCItem> opcItemList = new List<OPCItem>();
+        */
 
         public Form1()
         {
@@ -41,28 +48,18 @@ namespace Press_DB
 
         // 데이터베이스 연결 문자열
         private string connectionString = ConfigurationManager.ConnectionStrings["MyConnectionString"].ConnectionString;
-        private string opcServerIP = ConfigurationManager.AppSettings["OPCServerIP"];
 
         // 스레드 시작부분
         private void StartThread()
         {
-            // CancellationTokenSource 생성
-            cancellationTokenSource = new CancellationTokenSource();
-
-            // CancellationTokenSource에서 Token 가져오기
-            CancellationToken cancellationToken = cancellationTokenSource.Token;
-
-            // 스레드 시작
-            opcThread = new Thread(() => opcServerJoin(cancellationToken));
-            opcThread.Start();
-        }
-
-        // opc 서버와 연결하여 통신을 하며 아이템 객체들을 가져옴
-        private void opcServerJoin(CancellationToken cancellationToken)
-        {
-            
             try
             {
+                // CancellationTokenSource 생성
+                cancellationTokenSource = new CancellationTokenSource();
+
+                // CancellationTokenSource에서 Token 가져오기
+                CancellationToken cancellationToken = cancellationTokenSource.Token;
+
                 string opcGroupName = ConfigurationManager.AppSettings["OPCGroupName"];
 
                 // OPC 서버 연결
@@ -71,8 +68,8 @@ namespace Press_DB
                 opcServer.Connect("RSLinx OPC Server");
 
                 // OPC 그룹 생성 및 설정
-                opcGroups = opcServer.OPCGroups; 
-                
+                opcGroups = opcServer.OPCGroups;
+
                 // opc 서버에서 그룹을 관리하는 객체를 가져옴
                 // 이름에 맞는 OPC 그룹을 생성
                 opcGroup = opcGroups.Add("interface");
@@ -82,107 +79,196 @@ namespace Press_DB
                 opcGroup.IsSubscribed = true;
                 // OPC 아이템들을 관리하는 객체를 가져옴
                 opcItems = opcGroup.OPCItems;
-                
 
                 // OPC 에 정상 연결되었다면 텍스트 색상을 파랑색으로 변경
                 OPCstateTxt.ForeColor = Color.Blue;
+
+                // 스레드 시작
+                opcThread = new Thread(() => opcServerJoin(cancellationToken));
+                opcThread.Start();
             }
-            
+
             catch (Exception ex)
             {
                 // OPC 접속 에러가 날 시 텍스트 색상을 빨간색으로 변경하고 메세지 박스를 통해 에러를 표시합니다.
                 OPCstateTxt.ForeColor = Color.Red;
                 MessageBox.Show(ex.ToString());
             }
+        }
+
+        // opc 서버와 연결하여 통신을 하며 아이템 객체들을 가져옴
+        private void opcServerJoin(CancellationToken cancellationToken)
+        {
+            //// opcItems.AddItem 을 while 문 밖으로 꺼내어 한번만 값을 생성하고 opcItemList 를 read 해서 매번 값을 가져온다.
+            ///
+
+
+            // 왼쪽 맵 읽기.
+
+            // opcItems.AddItem 을 통해 OPC Item 을 읽어 온 뒤 opcItemList 에 불러온 OPCITEM 을 add.
+            opcItems.AddItem("[interface]WMS_PLC.PLT_In_Out", 1);
+            opcItems.AddItem("[interface]WMS_PLC.Job_Line", 1);
+            opcItems.AddItem("[interface]WMS_PLC.Serial_No", 1);
+            opcItems.AddItem("[interface]WMS_PLC.PLT_Number", 1);
+            opcItems.AddItem("[interface]WMS_PLC.Parts_Count_In_Pallet", 1);
+            opcItems.AddItem("[interface]WMS_PLC.PLT_Code", 1);
+
+            //opcItems.AddItem("PLT_TYPE", 1);
+            //opcItems.AddItem("Car_Type", 1);
+            //opcItems.AddItem("Item", 1);
+            //opcItems.AddItem("Spec", 1);
+            //opcItems.AddItem("[interface]WMS_PLC.WH_Line", 1);
+            //opcItems.AddItem("Counts", 1);
+
+
+            /* PLT_CODE 사용
+
+            // OPC 아이템 추가
+            opcItems.AddItem("PLT_IN_OUT", 1);
+            opcItems.AddItem("Job_Line", 1);
+            opcItems.AddItem("Serial_No", 1);
+            opcItems.AddItem("PLT_Number", 1);
+            opcItems.AddItem("PLT_CODE", 1);
+            opcItems.AddItem("Parts_count_in_pallet", 1);
+            */
+
+
+            // 오른쪽 맵 읽기.
+            opcItems.AddItem("[interface]PLC_WMS.Job_Line",2);
+            opcItems.AddItem("[interface]PLC_WMS.PLT_In_Out", 2);
+            opcItems.AddItem("[interface]PLC_WMS.Serial_No", 2);
+            opcItems.AddItem("[interface]PLC_WMS.PLT_Number", 2);
+            opcItems.AddItem("[interface]PLC_WMS.PLT_Code", 2);
+            opcItems.AddItem("[interface]PLC_WMS.Parts_Count_In_pallet", 2);
+
+            //opcItems.AddItem("[interface]PLC_WMS.WH_LINE", 2);
+            //opcItems.AddItem("[interface]PLC_WMS.Request_Check", 2);
+            //opcItems.AddItem("[interface]PLC_WMS.NG Code", 2);
 
             // 스레드가 실행되고 있는 동안 반복
             while (!cancellationToken.IsCancellationRequested)
             {
-                // 기존의 OPC 아이템들을 모두 제거
-                opcItemList.Clear();
-
-
-                //// opcItems.AddItem 을 while 문 밖으로 꺼내어 한번만 값을 생성하고 opcItemList 를 read 해서 매번 값을 가져온다.
-
-                // item 사용
-                if (opcItems != null)
+                // plcToPC 있는 각 OPCItem에 대해 읽기를 반복합니다.
+                foreach (OPCItem opcItem in opcItems)
                 {
-                    opcItemList.Add(opcItems.AddItem("[interface]WMS_PLC.PLT_In_Out", 1));
-                    opcItemList.Add(opcItems.AddItem("[interface]WMS_PLC.Job_Line", 1));
-                    opcItemList.Add(opcItems.AddItem("[interface]WMS_PLC.Serial_No", 1));
-                    opcItemList.Add(opcItems.AddItem("[interface]WMS_PLC.PLT_Number", 1));
-                    //opcItemList.Add(opcItems.AddItem("PLT_TYPE", 1));
-                    //opcItemList.Add(opcItems.AddItem("Car_Type", 1));
-                    //opcItemList.Add(opcItems.AddItem("Item", 1));
-                    //opcItemList.Add(opcItems.AddItem("Spec", 1));
-                    opcItemList.Add(opcItems.AddItem("[interface]WMS_PLC.WH_Line", 1));
-                    opcItemList.Add(opcItems.AddItem("[interface]WMS_PLC.Parts_Count_In_Pallet", 1));
-                    opcItemList.Add(opcItems.AddItem("Counts", 1));
+                    // 값을 저장할 변수들을 초기화합니다.
+                    object value;
+                    object quality;
+                    object timestamp;
+                    // opcItem.Read를 사용하여 OPC 서버에서 데이터를 읽어옵니다.
+                    opcItem.Read(1, out value, out quality, out timestamp);
+
+                    // string 형태로 변환한 object quality 의 값이 "0"(Good) 일 때 sendItem List 형태의 OPCITEM 에 opcitem 저장.
+                    if (quality.ToString() == "0")
+                    {
+                        sendItem.Add(opcItem);
+                    }
                 }
-
-
 
                 //// 프레스 인터페이스 맵 오른쪽 읽기
 
+                // pcToPLC 있는 각 OPCItem에 대해 읽기를 반복합니다.
+                foreach (OPCItem opcItem in opcItems)
+                {
+                    // 값을 저장할 변수들을 초기화합니다.
+                    object value;
+                    object quality;
+                    object timestamp;
+                    // opcItem.Read를 사용하여 OPC 서버에서 데이터를 읽어옵니다.
+                    opcItem.Read(2, out value, out quality, out timestamp);
+
+                    // string 형태로 변환한 object quality 의 값이 "0"(Good) 일 때 receiveItem List 형태의 OPCITEM 에 opcitem 저장.
+                    if (quality.ToString() == "0") 
+                    {
+                        receiveItem.Add(opcItem);
+                    }
+                }
 
 
                 //// 왼쪽 테이블에 데이터가 존재하지 않을 때 오른쪽 테이블에 데이터가 있을 때 오른쪽 테이블을 지운다.
+               foreach(OPCItem opcItem in receiveItem)
+                {
+                    // 왼쪽 테이블의 opcItem value 값을 object value 에 저장.
+                    object value =  opcItem.Value;
 
+                    // 왼쪽 테이블의 값을 오른쪽 테이블 ItemID를 이용해서 해당 값을 찾아옴. 오른쪽 테이블 ItemID 가 왼쪽 테이블에는 존재 하지 않는 ItemID 면 null 값을 받아옴.
+                    object value2 = sendItem.Find(item => item.ItemID == opcItem.ItemID)?.Value;
 
+                    // value2 값이 null 이 아닐 때.
+                    if (value2 != null)
+                    {
+                        // 왼쪽 테이블 value2 의 item 값이 존재하지 않고 오른쪽 테이블 value 의 Item값이 존재할 때. 
+                        if (value2.ToString() == "" && value.ToString() != value2.ToString())
+                        {
+                            // opcItem.Write 를 이용해서 value2 값으로 초기화 시켜준다.
+                            opcItem.Write("");
+                        }
+                    }
+                }
 
                 //// 조건체크 함수 만들기
                 ///// 1. 입고 조건
+                ///
+                ///// string 형태 pltINout 변수에 opcItemList 에서 PLT_IN_OUT 키의 값을 callNum 에 전달
+                string pltINout = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_In_Out")?.Value;
+
+                //PLT_IN_OUT 요청 번호를 받을 int 형 변수 callNum
+                // callNum 값이 1 일시 입고 함수 처리
+                if (int.Parse(pltINout) == 1)
+                {
+                    if (sendData(cancellationToken)){
+                        
+                        // Inreserve 함수를 호출하고 'connection' 객체를 매개변수로 전달합니다.
+
+                        if (Inreserve())
+                        {
+                            //// if(sendTalbe()){
+                            /// 
+                            /// }
+                            //// else{
+                            ///실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
+                            ///}
+                        }
+                        else
+                        {
+                            //// 인설트 실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
+                        }
+                    }
+                    else
+                    {
+                        //// 
+                    }
+                }
+
                 //// 1.1 PLT_IN_OUT 이 1번일 때 이고 오른쪽 테이블 값이 존재하지 않을 때
                 //// 2. 입고 조건이 맞으면 크레인 호기 와 상태 셀 상태 조회 후 In_reserve 테이블에 Insert 하기
                 //// 3. Insert 를 성공하면 오른쪽 테이블에 Write 해주기.
 
                 ///// 2. 출고 조건
+                ///
+                // callNum 값이 2 일시 출고 함수 처리
+                else if (int.Parse(pltINout) == 2)
+                {
+                    OutReserveData(cancellationToken);
+                }
                 //// 2.1 PLT_IN_OUT 이 2번일 때 이고 오른쪽 테이블 값이 존재하지 않을 때
                 //// 2. 출고 조건이 맞으면 크레인 호기 와 상태 셀 상태 조회 후 Out_reserve 테이블에 Insert 하기
                 //// 3. Insert 를 성공하면 오른쪽 테이블에 Write 해주기.
-                
+
 
 
 
                 ///// 3. 로그 남기기, 그리드 화면 지우기
-                
 
 
 
-                /* PLT_CODE 사용
 
-                // OPC 아이템 추가
-                opcItemList.Add(opcItems.AddItem("PLT_IN_OUT", 1));
-                opcItemList.Add(opcItems.AddItem("Job_Line", 1));
-                opcItemList.Add(opcItems.AddItem("Serial_No", 1));
-                opcItemList.Add(opcItems.AddItem("PLT_Number", 1));
-                opcItemList.Add(opcItems.AddItem("PLT_CODE", 1));
-                opcItemList.Add(opcItems.AddItem("Parts_count_in_pallet", 1));
-                */
-
-                // string 형태 callNum 변수에 opcItemList 에서 PLT_IN_OUT 키의 값을 callNum 에 전달
-                string callNum = opcItemList.Find(item => item.ItemID == "PLT_IN_OUT")?.Value;
-
-                //PLT_IN_OUT 요청 번호를 받을 int 형 변수 callNum
-                if (!string.IsNullOrEmpty(callNum))
-                {
-                    // callNum 값이 1 일시 입고 함수 처리
-                    if (int.Parse(callNum) == 1)
-                    {
-                        InReserveData(cancellationToken);
-                    }
-                    // callNum 값이 2 일시 출고 함수 처리
-                    else if (int.Parse(callNum) == 2)
-                    {
-                        OutReserveData(cancellationToken);
-                    }
-                }
                 Thread.Sleep(200);
             }
         }
 
         // OPC 서버 연결 및 데이터 수집 메서드
-        private void InReserveData(CancellationToken cancellationToken)
+        private bool sendData(CancellationToken cancellationToken)
         {
             // connectionString 변수에 저장된 데이터베이스 주소를 통해서 연결
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -267,6 +353,23 @@ namespace Press_DB
                         tsc.Stk_no DESC
                     ";
 
+                    
+
+                    //// 스테커 상태를 전체 다 읽어온다.
+                    ///
+
+
+                    for(int i=0; i < 8; i++)
+                    {
+                    /// 마지막 호기가 6호기 일 때 5호기 부터 조회를 한다.
+                    /// 호기 x 2 와 마지막 호기 x 2 - 1 값을 계산한다.
+                    
+                    
+                    /// 스테커 상태가 만족하면 cell 이 구해지면 cell 정보 저장 후 break.
+                    }
+                    
+
+
                     // opcItemList에서 ItemID가 "Item"인 항목을 찾아 해당 값(Value)을 가져옵니다.
                     string item = opcItemList.Find(item => item.ItemID == "Item")?.Value;
 
@@ -299,11 +402,12 @@ namespace Press_DB
                             // 셀 정보, "정상 입고"(Normal Incoming), "정상"(Normal), 그리고 현재 날짜와 시간을 특정 형식으로 전달합니다.
                             UpdateListView(cell, "정상 입고", "정상", DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                         }
-                        // Inreserve 함수를 호출하고 'connection' 객체를 매개변수로 전달합니다.
-                        Inreserve(connection);
+                       
                     }
                     // 모든 행을 반복한 후 SqlDataReader를 닫습니다.
                     reader.Close();
+
+                    return true;
                 }
 
                 catch (Exception ex)
@@ -311,6 +415,7 @@ namespace Press_DB
                     // SQL 접속 에러가 날 시 텍스트 색상을 빨간색으로 변경하고 메세지 박스를 통해 에러를 표시합니다.
                     SQLstateTxt.ForeColor = Color.Red;
                     MessageBox.Show(ex.ToString());
+                    return false;
                 }
             }
         }
@@ -494,8 +599,6 @@ namespace Press_DB
                     }
                     // SqlDataReader를 닫습니다.
                     reader.Close();
-                    // OutReserve 함수를 호출하고 'connection' 객체를 매개변수로 전달합니다.
-                    OutReserve(connection);
                 }
             }
             catch (Exception ex)
@@ -507,7 +610,7 @@ namespace Press_DB
         }
 
         // In_rserve 테이블에 데이터 삽입을 위한 함수 
-        private void Inreserve(SqlConnection connection)
+        private bool Inreserve()
         {
             // 각 아이템의 값을 딕셔너리에 추가
             
@@ -571,8 +674,8 @@ namespace Press_DB
             cmdInsert.ExecuteNonQuery();
             // 데이터베이스 연결 닫기
             connection.Close();
-            // Opc 통신에서 가져온 아이템 읽기 위해 호출할 함수.
-            OpcReadItem();
+
+            return true;
         }
 
         // Out_reserve 에 데이터 삽입 하기 위한 함수
@@ -601,23 +704,6 @@ namespace Press_DB
             cmdInsert.ExecuteNonQuery();
             // 데이터베이스 연결 닫기
             connection.Close();
-            // Opc 통신에서 가져온 아이템 읽기 위해 호출할 함수.
-            //OpcReadItem();
-        }
-
-        // OPC 항목들을 읽어오는 메서드입니다.
-        private void OpcReadItem()
-        {
-            // opcItemList에 있는 각 OPCItem에 대해 반복합니다.
-            foreach (OPCItem opcItem in opcItemList)
-            {
-                // 값을 저장할 변수들을 초기화합니다.
-                object value;
-                object quality;
-                object timestamp;
-                // opcItem.Read를 사용하여 OPC 서버에서 데이터를 읽어옵니다.
-                opcItem.Read(1, out value, out quality, out timestamp);
-            }
         }
 
         // 스레드 종료 메서드
