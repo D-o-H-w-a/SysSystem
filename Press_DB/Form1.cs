@@ -17,8 +17,6 @@ namespace Press_DB
         private OPCGroups opcGroups;
         // OPC 그룹을 나타내는 변수 선언
         private OPCGroup opcGroup;
-        // OPC 아이템을 나타내는 변수 선언
-        private OPCItem opcItem;
         // OPC 통신을 위한 스레드 변수 선언 
         private Thread opcThread;
         // 스레드를 중지시키는데 사용되는 토큰을 생성하는 CancellationTokenSource
@@ -58,8 +56,6 @@ namespace Press_DB
 
                 // CancellationTokenSource에서 Token 가져오기
                 CancellationToken cancellationToken = cancellationTokenSource.Token;
-
-                string opcGroupName = ConfigurationManager.AppSettings["OPCGroupName"];
 
                 // OPC 서버 연결
                 opcServer = new OPCServer();
@@ -103,20 +99,20 @@ namespace Press_DB
             // 왼쪽 맵 읽기.
 
             // opcItems.AddItem 을 통해 OPC Item 을 읽어 온 뒤 opcItemList 에 불러온 OPCITEM 을 add.
-            opcItems.AddItem("[interface]WMS_PLC.PLT_In_Out", 1);
-            opcItems.AddItem("[interface]WMS_PLC.Job_Line", 1);
-            opcItems.AddItem("[interface]WMS_PLC.Serial_No", 1);
-            opcItems.AddItem("[interface]WMS_PLC.PLT_Number", 1);
-            opcItems.AddItem("[interface]WMS_PLC.Parts_Count_In_Pallet", 1);
-            opcItems.AddItem("[interface]WMS_PLC.PLT_Code", 1);
+            sendItem.Add(opcItems.AddItem("[interface]WMS_PLC.PLT_In_Out", 1));
+            sendItem.Add(opcItems.AddItem("[interface]WMS_PLC.Job_Line", 1));
+            sendItem.Add(opcItems.AddItem("[interface]WMS_PLC.Serial_No", 1));
+            sendItem.Add(opcItems.AddItem("[interface]WMS_PLC.PLT_Number", 1));
+            sendItem.Add(opcItems.AddItem("[interface]WMS_PLC.Parts_Count_In_Pallet", 1));
+            sendItem.Add(opcItems.AddItem("[interface]WMS_PLC.PLT_Code", 1));
 
             // 오른쪽 맵 읽기.
-            opcItems.AddItem("[interface]PLC_WMS.Job_Line", 2);
-            opcItems.AddItem("[interface]PLC_WMS.PLT_In_Out", 2);
-            opcItems.AddItem("[interface]PLC_WMS.Serial_No", 2);
-            opcItems.AddItem("[interface]PLC_WMS.PLT_Number", 2);
-            opcItems.AddItem("[interface]PLC_WMS.PLT_Code", 2);
-            opcItems.AddItem("[interface]PLC_WMS.Parts_Count_In_pallet", 2);
+            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.Job_Line", 2));
+            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.PLT_In_Out", 2));
+            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.Serial_No", 2));
+            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.PLT_Number", 2));
+            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.PLT_Code", 2));
+            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.Parts_Count_In_pallet", 2));
 
             //opcItems.AddItem("[interface]PLC_WMS.WH_LINE", 2);
             //opcItems.AddItem("[interface]PLC_WMS.Request_Check", 2);
@@ -126,7 +122,7 @@ namespace Press_DB
             while (!cancellationToken.IsCancellationRequested)
             {
                 // plcToPC 있는 각 OPCItem에 대해 읽기를 반복합니다.
-                foreach (OPCItem opcItem in opcItems)
+                foreach (OPCItem opcItem in sendItem)
                 {
                     // 값을 저장할 변수들을 초기화합니다.
                     object value;
@@ -134,18 +130,12 @@ namespace Press_DB
                     object timestamp;
                     // opcItem.Read를 사용하여 OPC 서버에서 데이터를 읽어옵니다.
                     opcItem.Read(1, out value, out quality, out timestamp);
-
-                    // string 형태로 변환한 object quality 의 값이 "0"(Good) 일 때 sendItem List 형태의 OPCITEM 에 opcitem 저장.
-                    if (quality.ToString() == "0")
-                    {
-                        sendItem.Add(opcItem);
-                    }
                 }
 
                 //// 프레스 인터페이스 맵 오른쪽 읽기
 
                 // pcToPLC 있는 각 OPCItem에 대해 읽기를 반복합니다.
-                foreach (OPCItem opcItem in opcItems)
+                foreach (OPCItem opcItem in receiveItem)
                 {
                     // 값을 저장할 변수들을 초기화합니다.
                     object value;
@@ -153,12 +143,6 @@ namespace Press_DB
                     object timestamp;
                     // opcItem.Read를 사용하여 OPC 서버에서 데이터를 읽어옵니다.
                     opcItem.Read(2, out value, out quality, out timestamp);
-
-                    // string 형태로 변환한 object quality 의 값이 "0"(Good) 일 때 receiveItem List 형태의 OPCITEM 에 opcitem 저장.
-                    if (quality.ToString() == "0")
-                    {
-                        receiveItem.Add(opcItem);
-                    }
                 }
 
 
@@ -187,23 +171,19 @@ namespace Press_DB
                 ///// 1. 입고 조건
                 ///
                 ///// string 형태 pltINout 변수에 opcItemList 에서 PLT_IN_OUT 키의 값을 callNum 에 전달
-                string pltINout = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_In_Out")?.Value;
+                short pltINout = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_In_Out")?.Value;
 
                 //PLT_IN_OUT 요청 번호를 받을 int 형 변수 callNum
                 // callNum 값이 1 일시 입고 함수 처리
-                if (int.Parse(pltINout) == 1)
+                if (pltINout == 1)
                 {
                     if (sendData(cancellationToken))
                     {
 
                         if (Inreserve())
                         {
-                            if (sendTalbe())
-                            {
-
-                            }
-                            else
-                            {
+                            if (!sendTalbe()) 
+                            { 
                                 ///실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
                                 // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
                                 SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
@@ -231,18 +211,14 @@ namespace Press_DB
                 ///// 2. 출고 조건
                 ///
                 // callNum 값이 2 일시 출고 함수 처리
-                else if (int.Parse(pltINout) == 2)
+                else if (pltINout == 2)
                 {
                     if (receiveData(cancellationToken))
                     {
 
                         if (OutReserve())
                         {
-                            if (sendTalbe())
-                            {
-
-                            }
-                            else
+                            if (!sendTalbe())
                             {
                                 ///실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
                                 // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
@@ -444,7 +420,7 @@ namespace Press_DB
                                 // t_Cell 의 State 가 'EMPTY' 이고 In_reserve 에 입고 대기 중인 Cell 이 아닌 tc.PLT_CODE, tc.State, tc.Cell 을 찾아옵니다.
                                 query = @"
                                     SELECT TOP 1 tc.Pal_code, tc.State, tc.Cell,tc.Pal_no,tc.Pal_type,tc.Model,tc.Spec, tc.Line,
-                                    tc.Qty,tc.Max_qty,tc.Quality,tc.Prod_date,tc.Prod_time,tc.Prod_time,tc.Pos
+                                                tc.Qty,tc.Max_qty,tc.Quality,tc.Prod_date,tc.Prod_time,tc.Prod_time,tc.Pos
                                     FROM t_Cell tc
                                     LEFT JOIN t_Out_reserve tr ON tc.Cell = tr.Cell
                                     WHERE 
@@ -548,8 +524,8 @@ namespace Press_DB
                     itemValues["Utime"] = DateTime.Now.ToString("HH:mm:ss");
 
                     // 삽입 쿼리문 정의
-                    string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
-                                       "VALUES (@JobType , @Cell, @Pal_no, '', '', '', '', '', @Qty '', '', '', '', @State, '', @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";
+                    string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
+                                       "VALUES (@JobType , @Cell, @Pal_no, '', '', '', '', '', @Qty '', '', '', @State, '', @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";
 
                     // SqlCommand 객체 생성 및 쿼리문 설정
                     SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
@@ -601,8 +577,8 @@ namespace Press_DB
                     SQLstateTxt.ForeColor = Color.Blue;
 
                     // 삽입 쿼리문 정의
-                    string insertQuery = "INSERT INTO t_Out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_date, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
-                                       "VALUES (@JobType , @Cell, @PLT_Number, @Pal_type, @Model,'' , @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_date, @Prod_time, @State, @Pos, @Pal_code, @Serial_no, @Job_Line, @Udate, @Utime)";
+                    string insertQuery = "INSERT INTO t_Out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
+                                       "VALUES (@JobType , @Cell, @PLT_Number, @Pal_type, @Model,'' , @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_time, @State, @Pos, @Pal_code, @Serial_no, @Job_Line, @Udate, @Utime)";
 
                     // SqlCommand 객체 생성 및 쿼리문 설정
                     SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
@@ -669,6 +645,8 @@ namespace Press_DB
             }
             catch (Exception ex)
             {
+                // OPC 통신 중 에러가 날 시 텍스트 색상을 빨간색으로 변경하고 메세지 박스를 통해 에러를 표시합니다.
+                OPCstateTxt.ForeColor = Color.Red;
                 errorMsg = ex.ToString();
                 return false;
             }
@@ -698,8 +676,13 @@ namespace Press_DB
         // 그리드에 적힌 에러메세지를 로그로 저장하는 함수.
         private void ErrorMsgAddLog(bool gridClear)
         {
-            // 로그 파일 경로 설정
-            string logFilePath = "C:\\Path\\To\\ErrorMsg.txt";
+            // 사용자의 문서 폴더 경로를 얻기 위해 Environment 클래스의 GetFolderPath 메서드 사용
+            string userDocumentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+
+            // 로그 파일 경로 생성을 위해 Path 클래스의 Combine 메서드 사용
+            // 사용자의 문서 폴더와 로그 파일 이름을 결합하여 최종 경로 생성
+            string logFilePath = Path.Combine(userDocumentsPath, "ErrorMsg.txt");
+
 
             try
             {
@@ -711,7 +694,10 @@ namespace Press_DB
                     {
                         foreach (DataGridViewCell cell in row.Cells)
                         {
-                            sw.Write(cell.Value.ToString() + "\t");
+                            if (cell != null && cell.Value != null)
+                            {
+                                sw.Write(cell.Value.ToString() + "\t");
+                            }
                         }
                         sw.WriteLine(); // 각 행의 끝에 줄 바꿈 추가
                     }
