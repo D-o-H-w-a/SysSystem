@@ -30,12 +30,10 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
             listBox = new GroupBox();
             groupBox = new GroupBox();
             OPCstateTxt = new TextBox();
@@ -43,11 +41,9 @@
             outBtn = new Button();
             SQLstateTxt = new TextBox();
             dataGrid = new DataGridView();
-            cellNum = new DataGridViewTextBoxColumn();
-            cellState = new DataGridViewTextBoxColumn();
-            scState = new DataGridViewTextBoxColumn();
-            workDate = new DataGridViewTextBoxColumn();
-            workTime = new DataGridViewTextBoxColumn();
+            error_Msg = new DataGridViewTextBoxColumn();
+            error_Date = new DataGridViewTextBoxColumn();
+            error_Time = new DataGridViewTextBoxColumn();
             listBox.SuspendLayout();
             groupBox.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dataGrid).BeginInit();
@@ -147,7 +143,7 @@
             dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
             dataGrid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dataGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGrid.Columns.AddRange(new DataGridViewColumn[] { cellNum, cellState, scState, workDate, workTime });
+            dataGrid.Columns.AddRange(new DataGridViewColumn[] { error_Msg, error_Date, error_Time });
             dataGrid.Enabled = false;
             dataGrid.EnableHeadersVisualStyles = false;
             dataGrid.Location = new Point(12, 12);
@@ -155,70 +151,49 @@
             dataGrid.Name = "dataGrid";
             dataGrid.ReadOnly = true;
             dataGrid.RightToLeft = RightToLeft.No;
-            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle7.BackColor = SystemColors.Control;
-            dataGridViewCellStyle7.Font = new Font("맑은 고딕", 9F);
-            dataGridViewCellStyle7.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle7.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle7.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle7.WrapMode = DataGridViewTriState.True;
-            dataGrid.RowHeadersDefaultCellStyle = dataGridViewCellStyle7;
+            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle5.BackColor = SystemColors.Control;
+            dataGridViewCellStyle5.Font = new Font("맑은 고딕", 9F);
+            dataGridViewCellStyle5.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle5.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle5.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle5.WrapMode = DataGridViewTriState.True;
+            dataGrid.RowHeadersDefaultCellStyle = dataGridViewCellStyle5;
             dataGrid.RowHeadersVisible = false;
             dataGrid.RowHeadersWidth = 51;
             dataGrid.Size = new Size(755, 457);
             dataGrid.TabIndex = 0;
             dataGrid.TabStop = false;
             // 
-            // cellNum
+            // error_Msg
             // 
-            cellNum.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
             dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            cellNum.DefaultCellStyle = dataGridViewCellStyle2;
-            cellNum.HeaderText = "Cell Num";
-            cellNum.MinimumWidth = 6;
-            cellNum.Name = "cellNum";
-            cellNum.ReadOnly = true;
-            cellNum.Width = 122;
+            error_Msg.DefaultCellStyle = dataGridViewCellStyle2;
+            error_Msg.HeaderText = "Error Msg";
+            error_Msg.MinimumWidth = 6;
+            error_Msg.Name = "error_Msg";
+            error_Msg.ReadOnly = true;
+            error_Msg.Width = 500;
             // 
-            // cellState
+            // error_Date
             // 
             dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            cellState.DefaultCellStyle = dataGridViewCellStyle3;
-            cellState.HeaderText = "Result";
-            cellState.MinimumWidth = 6;
-            cellState.Name = "cellState";
-            cellState.ReadOnly = true;
-            cellState.Width = 158;
+            error_Date.DefaultCellStyle = dataGridViewCellStyle3;
+            error_Date.HeaderText = "Error Date";
+            error_Date.MinimumWidth = 6;
+            error_Date.Name = "error_Date";
+            error_Date.ReadOnly = true;
+            error_Date.Width = 126;
             // 
-            // scState
+            // error_Time
             // 
             dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            scState.DefaultCellStyle = dataGridViewCellStyle4;
-            scState.HeaderText = "Crane State";
-            scState.MinimumWidth = 6;
-            scState.Name = "scState";
-            scState.ReadOnly = true;
-            scState.Width = 157;
-            // 
-            // workDate
-            // 
-            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            workDate.DefaultCellStyle = dataGridViewCellStyle5;
-            workDate.HeaderText = "Work Date";
-            workDate.MinimumWidth = 6;
-            workDate.Name = "workDate";
-            workDate.ReadOnly = true;
-            workDate.Width = 158;
-            // 
-            // workTime
-            // 
-            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            workTime.DefaultCellStyle = dataGridViewCellStyle6;
-            workTime.HeaderText = "Work Time";
-            workTime.MinimumWidth = 6;
-            workTime.Name = "workTime";
-            workTime.ReadOnly = true;
-            workTime.Width = 157;
+            error_Time.DefaultCellStyle = dataGridViewCellStyle4;
+            error_Time.HeaderText = "Error Time";
+            error_Time.MinimumWidth = 6;
+            error_Time.Name = "error_Time";
+            error_Time.ReadOnly = true;
+            error_Time.Width = 126;
             // 
             // Form1
             // 
@@ -239,15 +214,13 @@
         #endregion
         private GroupBox listBox;
         private DataGridView dataGrid;
-        private DataGridViewTextBoxColumn cellNum;
-        private DataGridViewTextBoxColumn cellState;
-        private DataGridViewTextBoxColumn scState;
-        private DataGridViewTextBoxColumn workDate;
-        private DataGridViewTextBoxColumn workTime;
         private GroupBox groupBox;
         private TextBox OPCstateTxt;
         private Button inBtn;
         private Button outBtn;
         private TextBox SQLstateTxt;
+        private DataGridViewTextBoxColumn error_Msg;
+        private DataGridViewTextBoxColumn error_Date;
+        private DataGridViewTextBoxColumn error_Time;
     }
 }
