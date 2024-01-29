@@ -374,12 +374,12 @@ namespace Press_DB
 
                                             if (jobLine == 201 || jobLine == 202 || jobLine == 301)
                                             {
-                                                itemValues["Pos"] = innerreader["Bank"].ToString() + "-" + "1";
+                                                itemValues["Pos"] = searchValue + "-" + "1";
                                             }
                                             else if (jobLine == 401 || jobLine == 402 || jobLine == 403 ||
                                                  jobLine == 404 || jobLine == 405 || jobLine == 406 || jobLine >= 501)
                                             {
-                                                itemValues["Pos"] = innerreader["Bank"].ToString() + "-" + "4";
+                                                itemValues["Pos"] = searchValue + "-" + "4";
                                             }
 
                                             // itemValues 딕셔너리의 Cell 키의 Value 값에 쿼리문에서 가져온 Cell 을 string 형태로 형변환을 거친 후 대입합니다.
@@ -488,18 +488,18 @@ namespace Press_DB
                                 reader.Close();
 
                                 // t_Cell 의 Level 오름차순을 기준으로 Bank 값이 searchValue x 2 한 값 또는 2를 곱한 후 1을 뺀 값 그리고 PLT_CODE 앞자리 번호가 동일하며
-                                // t_Cell 의 State 가 'EMPTY' 이고 In_reserve 에 입고 대기 중인 Cell 이 아닌 tc.PLT_CODE, tc.State, tc.Cell 을 찾아옵니다.
+                                // t_Cell 의 State 가 'INCOMP' 이고 In_reserve 에 출고 대기 중인 Cell 이 아닌 데이터들을 찾아옵니다.
                                 query = @"
                                     SELECT TOP 1 tc.Pal_code, tc.State, tc.Cell,tc.Pal_no,tc.Pal_type,tc.Model,tc.Spec, tc.Line,
-                                                tc.Qty,tc.Max_qty,tc.Quality,tc.Prod_date,tc.Prod_time,tc.Prod_time,tc.Pos,tc.Bank
+                                                tc.Qty,tc.Max_qty,tc.Quality,tc.Prod_time,tc.Prod_time,tc.Pos,tc.Bank
                                     FROM t_Cell tc
                                     LEFT JOIN t_Out_reserve tr ON tc.Cell = tr.Cell
                                     WHERE 
                                         (tc.Bank = @searchValue * 2 OR tc.Bank = @searchValue * 2 - 1)
-                                        AND tc.Pal_code = @code
+                                        AND LEFT(tc.Pal_code, 2) = LEFT(@code, 2)
                                         AND tc.State = 'INCOMP'
                                         AND tr.Cell IS NULL
-                                    ORDER BY tc.Level ASC;
+                                    ORDER BY tc.Level ASC, tc.Udate ASC, tc.Utime ASC;
                                     ";
 
                                 // WMS_PLC 의 팔레트 코드번호가 존재하면 string 형태로 code 에 대입한다.
@@ -527,29 +527,29 @@ namespace Press_DB
                                             // jobLine 이 201 혹은 202 프레스리워크장 번호이거나 301 자동적재PLC 번호이면 Bank 값 뒤에 2번을 붙여서 Pos에 대입하여 위치를 알려준다.
                                             if (jobLine == 201 || jobLine == 202 || jobLine == 301)
                                             {
-                                                itemValues["Pos"] = innerreader["Bank"].ToString() + "-" + "2";
+                                                itemValues["Pos"] = searchValue + "-" + "2";
                                             }
                                             // jobLine 이 401 ~ 406 차체 리워크장 번호이거나 501~ 차체렉방 번호 이면 Bank 값 뒤에 3번을 붙여서 Pos에 대입하여 위치를 알려준다.
                                             else if (jobLine == 401 || jobLine == 402 || jobLine == 403 ||
                                                  jobLine == 404 || jobLine == 405 || jobLine == 406 || jobLine >= 501)
                                             {
-                                                itemValues["Pos"] = innerreader["Bank"].ToString() +"-"+ "3";
+                                                itemValues["Pos"] = searchValue + "-"+ "3";
                                             }
                                             // itemValues 딕셔너리 키의 Value 값에 쿼리문에서 가져온 값 을 필요한 형태로 형변환을거친 후 대입합니다.
                                             itemValues["Cell"] = innerreader["Cell"].ToString();
                                             itemValues["Pal_code"] = code;
                                             itemValues["State"] = "OUTCOMP";
-                                            itemValues["Pal_no"] = innerreader["Pal_no"].ToString();
+                                            itemValues["Pal_no"] = innerreader["Pal_no"];
                                             itemValues["Pal_type"] = innerreader["Pal_type"].ToString();
                                             itemValues["Model"] = innerreader["Model"].ToString();
                                             itemValues["Spec"] = innerreader["Spec"].ToString();
                                             itemValues["Line"] = innerreader["Line"].ToString();
                                             itemValues["Qty"] = Convert.ToInt32(innerreader["Qty"]);
                                             itemValues["Max_qty"] = Convert.ToInt32(innerreader["Max_qty"]);
-                                            itemValues["Prod_date"] = innerreader["Prod_date"].ToString();
                                             itemValues["Prod_time"] = innerreader["Prod_time"].ToString();
-                                            itemValues["Serial_no"] = Convert.ToDouble(innerreader["Serial_no"]);
+                                            itemValues["Serial_no"] = innerreader["Serial_no"].ToString();
                                             itemValues["JobType"] = "OUTAUTO";
+                                            itemValues["Job_Line"] = innerreader["Job_line"].ToString();
                                             itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
                                             itemValues["Utime"] = DateTime.Now.ToString("HH:mm:ss");
                                             // 쿼리문 읽기를 종료합니다.
