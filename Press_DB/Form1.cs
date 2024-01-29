@@ -1,6 +1,7 @@
 using OPCAutomation;
 using System.Configuration;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Windows.Forms;
 using static System.ComponentModel.Design.ObjectSelectorEditor;
 using static System.Windows.Forms.AxHost;
@@ -75,8 +76,8 @@ namespace Press_DB
                 // OPC 아이템들을 관리하는 객체를 가져옴
                 opcItems = opcGroup.OPCItems;
 
-                // OPC 에 정상 연결되었다면 텍스트 색상을 파랑색으로 변경
-                OPCstateTxt.ForeColor = Color.Blue;
+                // OPC 에 정상 연결되었다면 텍스트의 메세지를 PLC Connect 로 변경.
+                ShowText(2,"PLC Connect");
 
                 // 스레드 시작
                 opcThread = new Thread(() => opcServerJoin(cancellationToken));
@@ -85,9 +86,9 @@ namespace Press_DB
 
             catch (Exception ex)
             {
-                // OPC 접속 에러가 날 시 텍스트 색상을 빨간색으로 변경하고 메세지 박스를 통해 에러를 표시합니다.
-                OPCstateTxt.ForeColor = Color.Red;
-                MessageBox.Show(ex.ToString());
+                // OPC 접속 에러가 날 시 텍스트의 메세지를 PLC Connect Error 로 변경하고 메세지 박스를 통해 에러를 표시합니다.
+                ShowText(2, "PLC Connect Error");
+                errorMsg = ex.ToString();
             }
         }
 
@@ -112,7 +113,7 @@ namespace Press_DB
             receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.Serial_No", 2));
             receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.PLT_Number", 2));
             receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.PLT_Code", 2));
-            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.Parts_Count_In_pallet", 2));
+            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.Parts_Count_In_Pallet", 2));
 
             //opcItems.AddItem("[interface]PLC_WMS.WH_LINE", 2);
             //opcItems.AddItem("[interface]PLC_WMS.Request_Check", 2);
@@ -153,16 +154,16 @@ namespace Press_DB
                     object receive = opcItem.Value;
 
                     // 왼쪽 테이블의 값을 오른쪽 테이블 ItemID를 이용해서 해당 값을 찾아옴. 오른쪽 테이블 ItemID 가 왼쪽 테이블에는 존재 하지 않는 ItemID 면 null 값을 받아옴.
-                    object send = sendItem.Find(item => item.ItemID == opcItem.ItemID)?.Value;
+                    object send = sendItem.Find(item => item.ItemID.Replace("WMS_PLC", "").Trim() == opcItem.ItemID.Replace("PLC_WMS", "").Trim())?.Value;
 
                     // value2 값이 null 이 아닐 때.
                     if (send != null)
                     {
                         // 왼쪽 테이블 value2 의 item 값이 존재하지 않고 오른쪽 테이블 value 의 Item값이 존재할 때. 
-                        if (send.ToString() == "" && receive.ToString() != send.ToString())
+                        if (send.ToString() == "0" && receive.ToString() != send.ToString())
                         {
                             // opcItem.Write 를 이용해서 value2 값으로 초기화 시켜준다.
-                            opcItem.Write("");
+                            opcItem.Write("0");
                         }
                     }
                 }
@@ -171,22 +172,39 @@ namespace Press_DB
                 ///// 1. 입고 조건
                 ///
                 ///// string 형태 pltINout 변수에 opcItemList 에서 PLT_IN_OUT 키의 값을 callNum 에 전달
-                short pltINout = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_In_Out")?.Value;
+
+                object pltInOut = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.PLT_In_Out").Value;
+
+                // 값이 존재하는지 확인을 하기 위해서 int 형태로 값을 가져올 변수들 생성.
+                int pltINout = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_In_Out")?.Value);
+                int jobLine = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Job_Line")?.Value);
+                int serialNo = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Serial_No")?.Value);
+                int pltNumber = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_Number")?.Value);
+                int palletNum = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Parts_Count_In_Pallet")?.Value);
+                int plt_code = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_Code")?.Value);
 
                 //PLT_IN_OUT 요청 번호를 받을 int 형 변수 callNum
-                // callNum 값이 1 일시 입고 함수 처리
-                if (pltINout == 1)
+                // callNum 값이 1 일시 
+                // pltInOut의 0 이고 나머지 값들에 값이 0이 아닌 다른 값이 있을 시 입고 함수 처리
+                if (pltINout == 1 && pltInOut.ToString() == "0" && jobLine != 0 && serialNo != 0 && pltNumber != 0 && palletNum != 0 && plt_code != 0)
                 {
-                    if (sendData(cancellationToken))
+                    // 스테커 상태가 만족하면 cell 을 구해서 구해지면 cell 정보 저장하는 함수.
+                    if (sendData())
                     {
-
-                        if (Inreserve())
+                        // 데이터에 문제있는지 확인하고 있으면 NG Code 값을 주고 Request_Check 값을 2[ng]로
+                        // 없으면 Request_Check 값을 1[ok] 로 줄 함수.
+                        if (errorCheck())
                         {
-                            if (!sendTalbe()) 
-                            { 
-                                ///실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
-                                // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                            // sendData 함수에서 가져온 cell 정보를 토대로 왼쪽 테이블 값을 In_reserve 에 데이터 삽입 하기 위한 함수
+                            if (Inreserve())
+                            {
+                                // 왼쪽 테이블 데이터를 오른쪽에 써주기 위한 함수
+                                if (!sendTalbe())
+                                {
+                                    ///실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
+                                    // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
+                                    SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                                }
                             }
                         }
                         else
@@ -210,19 +228,26 @@ namespace Press_DB
 
                 ///// 2. 출고 조건
                 ///
-                // callNum 값이 2 일시 출고 함수 처리
-                else if (pltINout == 2)
+                // callNum 값이 2 일시
+                // pltInOut의 0 이고 나머지 값들에 값이 0이 아닌 다른 값이 있을 시 출고 함수 처리
+                else if (pltINout == 2 && pltInOut.ToString() == "0" && jobLine != 0 && serialNo != 0 && pltNumber != 0 && palletNum != 0 && plt_code != 0)
                 {
-                    if (receiveData(cancellationToken))
+                    if (receiveData())
                     {
-
-                        if (OutReserve())
+                        // 데이터에 문제있는지 확인하고 있으면 NG Code 값을 주고 Request_Check 값을 2[ng]로
+                        // 없으면 Request_Check 값을 1[ok] 로 줄 함수.
+                        if (errorCheck())
                         {
-                            if (!sendTalbe())
+                            // 스테커 상태가 만족하면 cell 을 구해서 구해지면 cell 정보 저장하는 함수.
+                            if (OutReserve())
                             {
-                                ///실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
-                                // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                                // sendData 함수에서 가져온 cell 정보를 토대로 왼쪽 테이블 값을 In_reserve 에 데이터 삽입 하기 위한 함수
+                                if (!sendTalbe())
+                                {
+                                    ///실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
+                                    // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
+                                    SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                                }
                             }
                         }
                         else
@@ -243,20 +268,13 @@ namespace Press_DB
                 //// 2. 출고 조건이 맞으면 크레인 호기 와 상태 셀 상태 조회 후 Out_reserve 테이블에 Insert 하기
                 //// 3. Insert 를 성공하면 오른쪽 테이블에 Write 해주기.
 
-
-
-
-                ///// 3. 로그 남기기, 그리드 화면 지우기
-
-
-
-
                 Thread.Sleep(200);
+                ///// 3. 로그 남기기, 그리드 화면 지우기
             }
         }
 
         // OPC 서버 연결 및 데이터 수집 메서드
-        private bool sendData(CancellationToken cancellationToken)
+        private bool sendData()
         {
             // connectionString 변수에 저장된 데이터베이스 주소를 통해서 연결
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -266,9 +284,8 @@ namespace Press_DB
                     // 데이터베이스 접속
                     connection.Open();
 
-                    // SQL 에 정상 연결되었다면 텍스트 색상을 파랑색으로 변경
-                    SQLstateTxt.ForeColor = Color.Blue;
-
+                    // SQL 에 정상 연결되었다면 DBstateTxt 의 Text 를 DB Connect 로 변경.
+                    ShowText(1, "DB Connect");
                     //// 스테커 상태를 전체 다 읽어온다.
                     ///
 
@@ -307,36 +324,47 @@ namespace Press_DB
                                     LEFT JOIN t_In_reserve tr ON tc.Cell = tr.Cell
                                     WHERE 
                                         (tc.Bank = @searchValue * 2 OR tc.Bank = @searchValue * 2 - 1)
-                                        AND tc.LEFT(tc.Pal_code, 1) = @codeFirstChar
+                                        AND tc.Pal_code = @code
                                         AND tc.State = 'EMPTY'
                                         AND tr.Cell IS NULL
                                     ORDER BY tc.Level ASC;
                                     ";
 
-                                string code = sendItem.Find(pltCode => pltCode.ItemID == "[interface]WMS_PLC.PLT_Code").ToString();
-                                char codeFirstChar = code.FirstOrDefault();
+                                string code = sendItem.Find(pltCode => pltCode.ItemID == "[interface]WMS_PLC.PLT_Code")?.Value.ToString();
+                                //char codeFirstChar = code.FirstOrDefault();
 
                                 // SqlCommand 개체를 만들고 쿼리(query)와 연결(connection)을 설정합니다
                                 command = new SqlCommand(query, connection);
                                 // @codeFirstChar 와 @searchValue 매개변수에 값을 할당합니다.
                                 command.Parameters.AddWithValue("@searchValue", searchValue);
-                                command.Parameters.AddWithValue("@codeFirstChar", codeFirstChar);
+                                command.Parameters.AddWithValue("@code", code);
+                                //command.Parameters.AddWithValue("@codeFirstChar", codeFirstChar);
 
                                 // 쿼리를 실행하고 SqlDataReader로 결과를 가져옵니다.
-                                reader = command.ExecuteReader();
-                                // 가져온 결과 값을 읽어옵니다.
-                                if (reader.Read())
+                                using (SqlDataReader innerreader = command.ExecuteReader())
                                 {
-                                    // 읽어 온 값이 있을 때 접근 합니다.
-                                    if(reader.FieldCount > 0)
+                                    // 가져온 결과 값을 읽어옵니다.
+                                    if (innerreader.Read())
                                     {
-                                        // itemValues 딕셔너리의 Cell 키의 Value 값에 쿼리문에서 가져온 Cell 을 string 형태로 형변환을 거친 후 대입합니다.
-                                        itemValues["Cell"] = reader["Cell"].ToString();
-                                        // 쿼리문 읽기를 종료합니다.
-                                        reader.Close();
-                                        break;
+                                        // 읽어 온 값이 있을 때 접근 합니다.
+                                        if (innerreader.FieldCount > 0)
+                                        {
+                                            // itemValues 딕셔너리의 Cell 키의 Value 값에 쿼리문에서 가져온 Cell 을 string 형태로 형변환을 거친 후 대입합니다.
+                                            itemValues["Cell"] = innerreader["Cell"].ToString();
+                                            // 쿼리문 읽기를 종료합니다.
+                                            innerreader.Close();
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            innerreader.Close();
+                                        }
                                     }
                                 }
+                            }
+                            else
+                            {
+                                reader.Close();
                             }
                         }
                         /// 마지막 호기가 6호기 일 때 5호기 부터 조회를 한다.
@@ -347,18 +375,23 @@ namespace Press_DB
                         /// 
                     }
 
+                    ////// 재고가 없을 시 NG Code 1 입력.
+                    ////// 제품 정보 이상일 시 Code 2 입력.
+                    ////// 데이터 이상 일 시 [시리얼 넘버 9자리가 아니거나 없거나] Code 3 입력.
+
                     // 데이터 베이스에 접속 종료.
                     connection.Close();
-                    // SQL 연결이 종료 되었다면 텍스트 색상을 검정색으로 변경
-                    SQLstateTxt.ForeColor = Color.Black;
+
+                    // SQL 연결이 종료 되었다면 텍스트를 "DB Disconnect" 로 변경
+                    ShowText(1, "DB Disconnect");
                     // 정상적으로 결과를 가져왔다면 return true 를 반환하여 함수를 종료합니다.
                     return true;
                 }
 
                 catch (Exception ex)
                 {
-                    // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트의 색상을 빨간색으로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
-                    SQLstateTxt.ForeColor = Color.Red;
+                    // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트를 DB Connect Error 로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
+                    ShowText(1, "DB Connect Error");
                     errorMsg = ex.ToString();
                     // false 를 return 시켜 접속이 되지 않았음을 알려줍니다.
                     return false;
@@ -373,7 +406,7 @@ namespace Press_DB
             StopThread();
         }
 
-        private bool receiveData(CancellationToken cancellationToken)
+        private bool receiveData()
         {
 
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -383,8 +416,8 @@ namespace Press_DB
                     // 데이터베이스 접속
                     connection.Open();
 
-                    // SQL 에 정상 연결되었다면 텍스트 색상을 파랑색으로 변경
-                    SQLstateTxt.ForeColor = Color.Blue;
+                    // SQL 에 정상 연결되었다면 DBstateTxt 의 Text 를 DB Connect 로 변경.
+                    ShowText(1, "DB Connect");
 
                     //// 스테커 상태를 전체 다 읽어온다.
                     ///
@@ -415,7 +448,7 @@ namespace Press_DB
                             {
                                 // reader.Close 를 통하여 읽고있는 쿼리문을 닫습니다.
                                 reader.Close();
-                         
+
                                 // t_Cell 의 Level 오름차순을 기준으로 Bank 값이 searchValue x 2 한 값 또는 2를 곱한 후 1을 뺀 값 그리고 PLT_CODE 앞자리 번호가 동일하며
                                 // t_Cell 의 State 가 'EMPTY' 이고 In_reserve 에 입고 대기 중인 Cell 이 아닌 tc.PLT_CODE, tc.State, tc.Cell 을 찾아옵니다.
                                 query = @"
@@ -431,7 +464,7 @@ namespace Press_DB
                                     ORDER BY tc.Level ASC;
                                     ";
 
-                                string code = sendItem.Find(pltCode => pltCode.ItemID == "[interface]WMS_PLC.PLT_Code").ToString();
+                                string code = sendItem.Find(pltCode => pltCode.ItemID == "[interface]WMS_PLC.PLT_Code")?.Value.ToString();
 
                                 // SqlCommand 개체를 만들고 쿼리(query)와 연결(connection)을 설정합니다
                                 command = new SqlCommand(query, connection);
@@ -440,37 +473,53 @@ namespace Press_DB
                                 command.Parameters.AddWithValue("@code", code);
 
                                 // 쿼리를 실행하고 SqlDataReader로 결과를 가져옵니다.
-                                reader = command.ExecuteReader();
-                                // 가져온 결과 값을 읽어옵니다.
-                                if (reader.Read())
+                                using (SqlDataReader innerreader = command.ExecuteReader())
                                 {
-                                    // 읽어 온 값이 있을 때 접근 합니다.
-                                    if (reader.FieldCount > 0)
+                                    // 가져온 결과 값을 읽어옵니다.
+                                    if (innerreader.Read())
                                     {
-                                        // itemValues 딕셔너리 키의 Value 값에 쿼리문에서 가져온 값 을 필요한 형태로 형변환을거친 후 대입합니다.
-                                        itemValues["Cell"] = reader["Cell"].ToString();
-                                        itemValues["Pal_code"] = code;
-                                        itemValues["State"] = "OUTCOMP";
-                                        itemValues["Pal_no"] = reader["Pal_no"].ToString();
-                                        itemValues["Pal_type"] = reader["Pal_type"].ToString();
-                                        itemValues["Model"] = reader["Model"].ToString();
-                                        itemValues["Spec"] = reader["Spec"].ToString();
-                                        itemValues["Line"] = reader["Line"].ToString();
-                                        itemValues["Qty"] = Convert.ToInt32(reader["Qty"]);
-                                        itemValues["Max_qty"] = Convert.ToInt32(reader["Max_qty"]);
-                                        itemValues["Quality"] = reader["Quality"].ToString();
-                                        itemValues["Prod_date"] = reader["Prod_date"].ToString();
-                                        itemValues["Prod_time"] = reader["Prod_time"].ToString();
-                                        itemValues["Pos"] = reader["Pos"].ToString();
-                                        itemValues["Serial_no"] = Convert.ToDouble(reader["Serial_no"]);
-                                        itemValues["JobType"] = "OUTAUTO";
-                                        itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
-                                        itemValues["Utime"] = DateTime.Now.ToString("HH:mm:ss");
-                                        // 쿼리문 읽기를 종료합니다.
-                                        reader.Close();
-                                        break;
+                                        // 읽어 온 값이 있을 때 접근 합니다.
+                                        if (innerreader.FieldCount > 0)
+                                        {
+                                            //////[2024-01-26 수정필요] 만약에 왼쪽 테이블에 Job_Line 에 따라서 Pos 를 입력.
+                                            ///
+
+                                            // itemValues 딕셔너리 키의 Value 값에 쿼리문에서 가져온 값 을 필요한 형태로 형변환을거친 후 대입합니다.
+                                            itemValues["Cell"] = innerreader["Cell"].ToString();
+                                            itemValues["Pal_code"] = code;
+                                            itemValues["State"] = "OUTCOMP";
+                                            itemValues["Pal_no"] = innerreader["Pal_no"].ToString();
+                                            itemValues["Pal_type"] = innerreader["Pal_type"].ToString();
+                                            itemValues["Model"] = innerreader["Model"].ToString();
+                                            itemValues["Spec"] = innerreader["Spec"].ToString();
+                                            itemValues["Line"] = innerreader["Line"].ToString();
+                                            itemValues["Qty"] = Convert.ToInt32(innerreader["Qty"]);
+                                            itemValues["Max_qty"] = Convert.ToInt32(innerreader["Max_qty"]);
+                                            itemValues["Quality"] = innerreader["Quality"].ToString();
+                                            itemValues["Prod_date"] = innerreader["Prod_date"].ToString();
+                                            itemValues["Prod_time"] = innerreader["Prod_time"].ToString();
+                                            itemValues["Pos"] = innerreader["Pos"].ToString();
+                                            itemValues["Serial_no"] = Convert.ToDouble(innerreader["Serial_no"]);
+                                            itemValues["JobType"] = "OUTAUTO";
+                                            itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
+                                            itemValues["Utime"] = DateTime.Now.ToString("HH:mm:ss");
+                                            // 쿼리문 읽기를 종료합니다.
+                                            innerreader.Close();
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            innerreader.Close();
+                                        }
                                     }
                                 }
+                            }
+                            else
+                            {
+                                ////// 재고가 없을 시 NG Code 1 입력.
+                                ////// 제품 정보 이상일 시 Code 2 입력.
+                                ////// 데이터 이상 일 시 [시리얼 넘버 9자리가 아니거나 없거나] Code 3 입력.
+                                reader.Close();
                             }
                         }
                         /// 마지막 호기가 6호기 일 때 5호기 부터 조회를 한다.
@@ -483,16 +532,17 @@ namespace Press_DB
 
                     // 데이터 베이스에 접속 종료.
                     connection.Close();
-                    // SQL 연결이 종료 되었다면 텍스트 색상을 검정색으로 변경
-                    SQLstateTxt.ForeColor = Color.Black;
+                    // SQL 연결이 종료 되었다면 텍스트를 "DB Disconnect" 로 변경
+                    ShowText(1, "DB Disconnect");
+                    
                     // 정상적으로 결과를 가져왔다면 return true 를 반환하여 함수를 종료합니다.
                     return true;
                 }
 
                 catch (Exception ex)
                 {
-                    // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트의 색상을 빨간색으로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
-                    SQLstateTxt.ForeColor = Color.Red;
+                    // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트를 DB Connect Error 로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
+                    ShowText(1, "DB Connect Error");
                     errorMsg = ex.ToString();
                     // false 를 return 시켜 접속이 되지 않았음을 알려줍니다.
                     return false;
@@ -509,8 +559,8 @@ namespace Press_DB
                 {
                     // SQL 에 접속.
                     connection.Open();
-                    // SQL 에 정상 연결되었다면 텍스트 색상을 파랑색으로 변경
-                    SQLstateTxt.ForeColor = Color.Blue;
+                    // SQL 에 정상 연결되었다면 DBstateTxt 의 Text 를 DB Connect 로 변경.
+                    ShowText(1, "DB Connect");
 
                     // 각각의 키 값이 가진 Value 값에 sendItem 에서 item Value 값을 찾아 대입.
                     itemValues["Job_Line"] = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Job_Line")?.Value;
@@ -524,8 +574,11 @@ namespace Press_DB
                     itemValues["Utime"] = DateTime.Now.ToString("HH:mm:ss");
 
                     // 삽입 쿼리문 정의
-                    string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
-                                       "VALUES (@JobType , @Cell, @Pal_no, '', '', '', '', '', @Qty '', '', '', @State, '', @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";
+                    /*string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Qty, State, Pal_code, Serial_no, Job_line, Udate, Utime)" +
+                                       "VALUES (@JobType , @Cell, @Pal_no, @Qty,  @State, @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";*/
+
+                    string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality,Prod_date, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
+                   "VALUES (@JobType , @Cell, @Pal_no, '', '', '', '', '', @Qty, '', '','', '', @State, '', @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";
 
                     // SqlCommand 객체 생성 및 쿼리문 설정
                     SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
@@ -538,7 +591,6 @@ namespace Press_DB
                         {
                             // 매개변수에 추가할 값 설정 (null이 아니면 해당 값, null이면 공백 문자열로 설정)
                             object valueToInsert = kvp.Value != null ? kvp.Value : " ";
-
                             // SqlCommand의 Parameters 컬렉션에 새로운 매개변수 추가
                             cmdInsert.Parameters.AddWithValue("@" + kvp.Key, valueToInsert);
                         }
@@ -548,19 +600,20 @@ namespace Press_DB
                     cmdInsert.ExecuteNonQuery();
                     // 데이터베이스 연결 닫기
                     connection.Close();
-                    // SQL 연결이 종료 되었다면 텍스트 색상을 검정색으로 변경
-                    SQLstateTxt.ForeColor = Color.Black;
+                    // SQL 연결이 종료 되었다면 텍스트를 "DB Disconnect" 로 변경
+                    ShowText(1, "DB Disconnect");
                 }
 
                 // 정상적으로 데이터를 저장하였다면 return 값을 true 로 반환.
                 return true;
             }
 
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트의 색상을 빨간색으로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
-                SQLstateTxt.ForeColor = Color.Red;
+                // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트를 DB Connect Error 로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
+                ShowText(1, "DB Connect Error");
                 errorMsg = ex.ToString();
+                // false 를 return 시켜 접속이 되지 않았음을 알려줍니다.
                 return false;
             }
         }
@@ -573,8 +626,10 @@ namespace Press_DB
                 {
                     // SQL 에 접속.
                     connection.Open();
-                    // SQL 에 정상 연결되었다면 텍스트 색상을 파랑색으로 변경
-                    SQLstateTxt.ForeColor = Color.Blue;
+                    // SQL 에 정상 연결되었다면 DBstateTxt 의 Text 를 DB Connect 로 변경.
+                    ShowText(1, "DB Connect");
+
+
 
                     // 삽입 쿼리문 정의
                     string insertQuery = "INSERT INTO t_Out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
@@ -601,8 +656,8 @@ namespace Press_DB
                     cmdInsert.ExecuteNonQuery();
                     // 데이터베이스 연결 닫기
                     connection.Close();
-                    // SQL 연결이 종료 되었다면 텍스트 색상을 검정색으로 변경
-                    SQLstateTxt.ForeColor = Color.Black;
+                    // SQL 연결이 종료 되었다면 텍스트를 "DB Disconnect" 로 변경
+                    ShowText(1, "DB Disconnect");
                 }
 
                 // 정상적으로 데이터를 저장하였다면 return 값을 true 로 반환.
@@ -611,9 +666,10 @@ namespace Press_DB
 
             catch (Exception ex)
             {
-                // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트의 색상을 빨간색으로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
-                SQLstateTxt.ForeColor = Color.Red;
+                // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트를 DB Connect Error 로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
+                ShowText(1, "DB Connect Error");
                 errorMsg = ex.ToString();
+                // false 를 return 시켜 접속이 되지 않았음을 알려줍니다.
                 return false;
             }
         }
@@ -630,23 +686,42 @@ namespace Press_DB
                     object send = opcItem.Value;
 
                     // receiveItem 컬렉션에서 현재 OPCItem과 동일한 ItemID를 가진 항목 찾기
-                    object receive = receiveItem.Find(item => item.ItemID == opcItem.ItemID)?.Value;
+                    object receive = receiveItem.Find(item => item.ItemID.Replace("PLC_WMS", "").Trim() == opcItem.ItemID.Replace("WMS_PLC", "").Trim())?.Value;
 
                     // 만약 receive 값이 존재하고, 값이 비어있고 send 값과 다른 경우
                     if (receive != null)
                     {
-                        if (receive.ToString() == "" && send.ToString() != receive.ToString())
+                        if (receive.ToString() == "0" && send.ToString() != receive.ToString())
                         {
-                            receiveItem.Find(item => item.ItemID == opcItem.ItemID)?.Write(send);
+                            receiveItem.Find(item => item.ItemID.Replace("PLC_WMS", "").Trim() == opcItem.ItemID.Replace("WMS_PLC", "").Trim())?.Write(send);
                         }
                     }
                 }
+
+                //OPCItem writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.WH_Line");
+                //if (writeItem != null)
+                //{
+                //    writeItem.Write(itemValues["WH_Line"].ToString());
+                //}
+
+                //writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.Request_Check");
+                //if (writeItem != null)
+                //{
+                //    writeItem.Write(itemValues["Request_Check"].ToString());
+                //}
+
+                //writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.NG Code");
+                //if (writeItem != null)
+                //{
+                //    writeItem.Write(itemValues["NG Code"].ToString());
+                //}
+
                 return true;
             }
             catch (Exception ex)
             {
-                // OPC 통신 중 에러가 날 시 텍스트 색상을 빨간색으로 변경하고 메세지 박스를 통해 에러를 표시합니다.
-                OPCstateTxt.ForeColor = Color.Red;
+                // OPC 접속 에러가 날 시 텍스트의 메세지를 PLC Connect Error 로 변경하고 메세지 박스를 통해 에러를 표시합니다.
+                ShowText(2, "PLC Connect Error");
                 errorMsg = ex.ToString();
                 return false;
             }
@@ -668,7 +743,7 @@ namespace Press_DB
                 // 데이터 그리드에 새로운 행 추가
                 dataGrid.Rows.Add(errorMsg, errorDate, errorTime);
             }
-            
+
             // 에러메세지 로그 저장 함수호출.
             ErrorMsgAddLog(false);
         }
@@ -679,9 +754,11 @@ namespace Press_DB
             // 사용자의 문서 폴더 경로를 얻기 위해 Environment 클래스의 GetFolderPath 메서드 사용
             string userDocumentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
-            // 로그 파일 경로 생성을 위해 Path 클래스의 Combine 메서드 사용
-            // 사용자의 문서 폴더와 로그 파일 이름을 결합하여 최종 경로 생성
-            string logFilePath = Path.Combine(userDocumentsPath, "ErrorMsg.txt");
+            // 현재 날짜를 포함한 로그 파일 이름 생성
+            string logFileName = "ErrorMsg_" + DateTime.Now.ToString("yyyy-MM-dd") + ".txt";
+
+            // 최종 로그 파일 경로 생성
+            string logFilePath = Path.Combine(userDocumentsPath, logFileName);
 
 
             try
@@ -706,7 +783,7 @@ namespace Press_DB
                     MessageBox.Show("DataGridView contents saved to log file.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
 
-                if(gridClear == true)
+                if (gridClear == true)
                 {
                     // DataGridView의 모든 행을 제거
                     dataGrid.Rows.Clear();
@@ -717,6 +794,36 @@ namespace Press_DB
                 // 로그 작성 중 오류 발생 시 예외 처리
                 MessageBox.Show("Error writing to log file: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private bool errorCheck()
+        {
+            string serialValue = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Serial_No")?.Value as string;
+
+            // 만약 재고가 존재하는 Cell 을 못구했다면.
+            if (!itemValues.ContainsKey("Cell"))
+            {
+                // Cell 키의 값을 "" 로 해서 딕셔너리 생성.
+                itemValues["Cell"] = "";
+                // Request_Cehck 키의 값을 2번값으로 ng 코드를 넣어줄 딕셔너리 생성.
+                itemValues["Request_Check"] = "2";
+                // NG Code 키의 값을 1번으로 하여 재고없음을 알려줄 딕셔너리 생성.
+                itemValues["NG Code"] = "1";
+
+                return true;
+            }
+
+            else if (!string.IsNullOrEmpty(serialValue) && serialValue.Length != 9)
+            {
+                // Request_Cehck 키의 값을 2번값으로 ng 코드를 넣어줄 딕셔너리 생성.
+                itemValues["Request_Check"] = "2";
+                // NG Code 키의 값을 1번으로 하여 재고없음을 알려줄 딕셔너리 생성.
+                itemValues["NG Code"] = "2";
+
+                return true;
+            }
+
+            return true;
         }
 
         // 스레드 종료 메서드
@@ -730,14 +837,91 @@ namespace Press_DB
             }
         }
 
+        private void ShowText(int type, string state)
+        {
+            // 타입 1번이면 SQL 텍스트 상태를 변경.
+            if (type == 1)
+            {
+                if (DBstateTxt.InvokeRequired)
+                {
+                    // SQL 연결이 상태에 따라 state 변경.
+                    DBstateTxt.Invoke(new MethodInvoker(delegate { DBstateTxt.Text = state; }));
+                }
+                else
+                {
+                    DBstateTxt.Text = state;
+                }
+            }
+
+            // 타입 2번이면 PLC 텍스트 상태를 변경.
+            else if(type == 2)
+            {
+                if (PLCstateTxt.InvokeRequired)
+                {
+                    // SQL 연결이 상태에 따라 state 변경.
+                    PLCstateTxt.Invoke(new MethodInvoker(delegate { PLCstateTxt.Text = state; }));
+                }
+                else
+                {
+                    PLCstateTxt.Text = state;
+                }
+            }
+        }
+
         private void outBtn_Click(object sender, EventArgs e)
         {
-            //StartThread(2);
+            foreach (OPCItem opcItem in sendItem)
+            {
+                switch (opcItem.ItemID)
+                {
+                    case "[interface]WMS_PLC.PLT_In_Out":
+                        opcItem.Write("0");
+                        break;
+                    case "[interface]WMS_PLC.Job_Line":
+                        opcItem.Write("0");
+                        break;
+                    case "[interface]WMS_PLC.Serial_No":
+                        opcItem.Write("0");
+                        break;
+                    case "[interface]WMS_PLC.PLT_Number":
+                        opcItem.Write("0");
+                        break;
+                    case "[interface]WMS_PLC.Parts_Count_In_Pallet":
+                        opcItem.Write("0");
+                        break;
+                    case "[interface]WMS_PLC.PLT_Code":
+                        opcItem.Write("0");
+                        break;
+                }
+            }
         }
 
         private void inBtn_Click(object sender, EventArgs e)
         {
-            //StartThread(1);
+            foreach (OPCItem opcItem in sendItem)
+            {
+                switch (opcItem.ItemID)
+                {
+                    case "[interface]WMS_PLC.PLT_In_Out":
+                        opcItem.Write("1");
+                        break;
+                    case "[interface]WMS_PLC.Job_Line":
+                        opcItem.Write("201");
+                        break;
+                    case "[interface]WMS_PLC.Serial_No":
+                        opcItem.Write("411010001");
+                        break;
+                    case "[interface]WMS_PLC.PLT_Number":
+                        opcItem.Write("345");
+                        break;
+                    case "[interface]WMS_PLC.Parts_Count_In_Pallet":
+                        opcItem.Write("8");
+                        break;
+                    case "[interface]WMS_PLC.PLT_Code":
+                        opcItem.Write("1101");
+                        break;
+                }
+            }
         }
     }
 }

@@ -29,17 +29,17 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle10 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle8 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle9 = new DataGridViewCellStyle();
             listBox = new GroupBox();
             groupBox = new GroupBox();
-            OPCstateTxt = new TextBox();
+            PLCstateTxt = new TextBox();
             inBtn = new Button();
             outBtn = new Button();
-            SQLstateTxt = new TextBox();
+            DBstateTxt = new TextBox();
             dataGrid = new DataGridView();
             error_Msg = new DataGridViewTextBoxColumn();
             error_Date = new DataGridViewTextBoxColumn();
@@ -61,10 +61,10 @@
             // groupBox
             // 
             groupBox.BackColor = SystemColors.ActiveCaption;
-            groupBox.Controls.Add(OPCstateTxt);
+            groupBox.Controls.Add(PLCstateTxt);
             groupBox.Controls.Add(inBtn);
             groupBox.Controls.Add(outBtn);
-            groupBox.Controls.Add(SQLstateTxt);
+            groupBox.Controls.Add(DBstateTxt);
             groupBox.FlatStyle = FlatStyle.Popup;
             groupBox.Font = new Font("맑은 고딕", 1F);
             groupBox.Location = new Point(3, 317);
@@ -73,19 +73,20 @@
             groupBox.TabIndex = 3;
             groupBox.TabStop = false;
             // 
-            // OPCstateTxt
+            // PLCstateTxt
             // 
-            OPCstateTxt.BackColor = SystemColors.ActiveCaption;
-            OPCstateTxt.BorderStyle = BorderStyle.None;
-            OPCstateTxt.Font = new Font("맑은 고딕", 10.8F);
-            OPCstateTxt.Location = new Point(281, 36);
-            OPCstateTxt.Name = "OPCstateTxt";
-            OPCstateTxt.ReadOnly = true;
-            OPCstateTxt.ShortcutsEnabled = false;
-            OPCstateTxt.Size = new Size(164, 24);
-            OPCstateTxt.TabIndex = 1;
-            OPCstateTxt.TabStop = false;
-            OPCstateTxt.Text = "OPC Comm Status";
+            PLCstateTxt.BackColor = SystemColors.ActiveCaption;
+            PLCstateTxt.BorderStyle = BorderStyle.None;
+            PLCstateTxt.Font = new Font("맑은 고딕", 10.8F);
+            PLCstateTxt.Location = new Point(254, 36);
+            PLCstateTxt.Name = "PLCstateTxt";
+            PLCstateTxt.ReadOnly = true;
+            PLCstateTxt.ShortcutsEnabled = false;
+            PLCstateTxt.Size = new Size(216, 24);
+            PLCstateTxt.TabIndex = 1;
+            PLCstateTxt.TabStop = false;
+            PLCstateTxt.Text = "PLC Disconnect";
+            PLCstateTxt.TextAlign = HorizontalAlignment.Center;
             // 
             // inBtn
             // 
@@ -97,7 +98,7 @@
             inBtn.Name = "inBtn";
             inBtn.Size = new Size(113, 26);
             inBtn.TabIndex = 0;
-            inBtn.Text = "IN";
+            inBtn.Text = "TEST";
             inBtn.UseVisualStyleBackColor = false;
             inBtn.Click += inBtn_Click;
             // 
@@ -111,37 +112,38 @@
             outBtn.Name = "outBtn";
             outBtn.Size = new Size(113, 26);
             outBtn.TabIndex = 0;
-            outBtn.Text = "OUT";
+            outBtn.Text = "RESET";
             outBtn.UseVisualStyleBackColor = false;
             outBtn.Click += outBtn_Click;
             // 
-            // SQLstateTxt
+            // DBstateTxt
             // 
-            SQLstateTxt.BackColor = SystemColors.ActiveCaption;
-            SQLstateTxt.BorderStyle = BorderStyle.None;
-            SQLstateTxt.Font = new Font("맑은 고딕", 10.8F);
-            SQLstateTxt.Location = new Point(281, 6);
-            SQLstateTxt.Name = "SQLstateTxt";
-            SQLstateTxt.ReadOnly = true;
-            SQLstateTxt.ShortcutsEnabled = false;
-            SQLstateTxt.Size = new Size(164, 24);
-            SQLstateTxt.TabIndex = 1;
-            SQLstateTxt.TabStop = false;
-            SQLstateTxt.Text = "SQL Comm Status";
+            DBstateTxt.BackColor = SystemColors.ActiveCaption;
+            DBstateTxt.BorderStyle = BorderStyle.None;
+            DBstateTxt.Font = new Font("맑은 고딕", 10.8F);
+            DBstateTxt.Location = new Point(254, 9);
+            DBstateTxt.Name = "DBstateTxt";
+            DBstateTxt.ReadOnly = true;
+            DBstateTxt.ShortcutsEnabled = false;
+            DBstateTxt.Size = new Size(216, 24);
+            DBstateTxt.TabIndex = 1;
+            DBstateTxt.TabStop = false;
+            DBstateTxt.Text = "DB Disconnect";
+            DBstateTxt.TextAlign = HorizontalAlignment.Center;
             // 
             // dataGrid
             // 
             dataGrid.AllowUserToResizeColumns = false;
             dataGrid.AllowUserToResizeRows = false;
             dataGrid.BackgroundColor = Color.FromArgb(191, 205, 218);
-            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle1.BackColor = SystemColors.Control;
-            dataGridViewCellStyle1.Font = new Font("맑은 고딕", 9F);
-            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
-            dataGrid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle6.BackColor = SystemColors.Control;
+            dataGridViewCellStyle6.Font = new Font("맑은 고딕", 9F);
+            dataGridViewCellStyle6.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle6.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle6.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle6.WrapMode = DataGridViewTriState.True;
+            dataGrid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle6;
             dataGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGrid.Columns.AddRange(new DataGridViewColumn[] { error_Msg, error_Date, error_Time });
             dataGrid.Enabled = false;
@@ -151,14 +153,14 @@
             dataGrid.Name = "dataGrid";
             dataGrid.ReadOnly = true;
             dataGrid.RightToLeft = RightToLeft.No;
-            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle5.BackColor = SystemColors.Control;
-            dataGridViewCellStyle5.Font = new Font("맑은 고딕", 9F);
-            dataGridViewCellStyle5.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle5.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle5.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle5.WrapMode = DataGridViewTriState.True;
-            dataGrid.RowHeadersDefaultCellStyle = dataGridViewCellStyle5;
+            dataGridViewCellStyle10.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle10.BackColor = SystemColors.Control;
+            dataGridViewCellStyle10.Font = new Font("맑은 고딕", 9F);
+            dataGridViewCellStyle10.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle10.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle10.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle10.WrapMode = DataGridViewTriState.True;
+            dataGrid.RowHeadersDefaultCellStyle = dataGridViewCellStyle10;
             dataGrid.RowHeadersVisible = false;
             dataGrid.RowHeadersWidth = 51;
             dataGrid.Size = new Size(755, 457);
@@ -167,8 +169,8 @@
             // 
             // error_Msg
             // 
-            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            error_Msg.DefaultCellStyle = dataGridViewCellStyle2;
+            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            error_Msg.DefaultCellStyle = dataGridViewCellStyle7;
             error_Msg.HeaderText = "Error Msg";
             error_Msg.MinimumWidth = 6;
             error_Msg.Name = "error_Msg";
@@ -177,8 +179,8 @@
             // 
             // error_Date
             // 
-            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            error_Date.DefaultCellStyle = dataGridViewCellStyle3;
+            dataGridViewCellStyle8.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            error_Date.DefaultCellStyle = dataGridViewCellStyle8;
             error_Date.HeaderText = "Error Date";
             error_Date.MinimumWidth = 6;
             error_Date.Name = "error_Date";
@@ -187,8 +189,8 @@
             // 
             // error_Time
             // 
-            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            error_Time.DefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle9.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            error_Time.DefaultCellStyle = dataGridViewCellStyle9;
             error_Time.HeaderText = "Error Time";
             error_Time.MinimumWidth = 6;
             error_Time.Name = "error_Time";
@@ -215,10 +217,10 @@
         private GroupBox listBox;
         private DataGridView dataGrid;
         private GroupBox groupBox;
-        private TextBox OPCstateTxt;
+        private TextBox PLCstateTxt;
         private Button inBtn;
         private Button outBtn;
-        private TextBox SQLstateTxt;
+        private TextBox DBstateTxt;
         private DataGridViewTextBoxColumn error_Msg;
         private DataGridViewTextBoxColumn error_Date;
         private DataGridViewTextBoxColumn error_Time;
