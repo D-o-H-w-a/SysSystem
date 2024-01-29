@@ -115,9 +115,9 @@ namespace Press_DB
             receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.PLT_Code", 2));
             receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.Parts_Count_In_Pallet", 2));
 
-            //opcItems.AddItem("[interface]PLC_WMS.WH_LINE", 2);
-            //opcItems.AddItem("[interface]PLC_WMS.Request_Check", 2);
-            //opcItems.AddItem("[interface]PLC_WMS.NG Code", 2);
+            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.WH_LINE", 2));
+            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.Request_Check", 2));
+            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.NG Code", 2));
 
             // 스레드가 실행되고 있는 동안 반복
             while (!cancellationToken.IsCancellationRequested)
@@ -166,6 +166,19 @@ namespace Press_DB
                             opcItem.Write("0");
                         }
                     }
+                    // 만약 opcItem의 ItemID 가 해당 조건문과 같고 아이템의 값이 0이 아닐 때 0으로 써주기. 
+                    if (opcItem.ItemID == "[interface]PLC_WMS.WH_LINE" && opcItem.Value.ToString() != "0")
+                    {
+                        opcItem.Write("0");
+                    }
+                    else if (opcItem.ItemID == "[interface]PLC_WMS.Request_Check" && opcItem.Value.ToString() != "0")
+                    {
+                        opcItem.Write("0");
+                    }
+                    else if (opcItem.ItemID == "[interface]PLC_WMS.NG Code" && opcItem.Value.ToString() != "0")
+                    {
+                        opcItem.Write("0");
+                    }
                 }
 
                 //// 조건체크 함수 만들기
@@ -206,10 +219,17 @@ namespace Press_DB
                                     SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                                 }
                             }
+                            else
+                            {
+                                //// 인설트 실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
+                                ///
+                                // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
+                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                            }
                         }
                         else
                         {
-                            //// 인설트 실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
+                            //// errorCheck 에서 데이터 검사 과정 중 문제가 있으면 그리드에 메세지 출력. 로그에 메세지 저장.
                             ///
                             // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
                             SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
@@ -319,7 +339,7 @@ namespace Press_DB
                                 // t_Cell 의 Level 오름차순을 기준으로 Bank 값이 searchValue x 2 한 값 또는 2를 곱한 후 1을 뺀 값 그리고 PLT_CODE 앞자리 번호가 동일하며
                                 // t_Cell 의 State 가 'EMPTY' 이고 In_reserve 에 입고 대기 중인 Cell 이 아닌 tc.PLT_CODE, tc.State, tc.Cell 을 찾아옵니다.
                                 query = @"
-                                    SELECT TOP 1 tc.Pal_code, tc.State, tc.Cell
+                                    SELECT TOP 1 tc.Pal_code, tc.State, tc.Cell, tc.Bank
                                     FROM t_Cell tc
                                     LEFT JOIN t_In_reserve tr ON tc.Cell = tr.Cell
                                     WHERE 
@@ -330,6 +350,7 @@ namespace Press_DB
                                     ORDER BY tc.Level ASC;
                                     ";
 
+                                // OPC 통신을 통해서 Read 하여 가져온 PLT_Code 값을 code 에 스트링형태로 대입. 
                                 string code = sendItem.Find(pltCode => pltCode.ItemID == "[interface]WMS_PLC.PLT_Code")?.Value.ToString();
                                 //char codeFirstChar = code.FirstOrDefault();
 
@@ -349,6 +370,18 @@ namespace Press_DB
                                         // 읽어 온 값이 있을 때 접근 합니다.
                                         if (innerreader.FieldCount > 0)
                                         {
+                                            int jobLine = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Job_Line")?.Value);
+
+                                            if (jobLine == 201 || jobLine == 202 || jobLine == 301)
+                                            {
+                                                itemValues["Pos"] = innerreader["Bank"].ToString() + "-" + "1";
+                                            }
+                                            else if (jobLine == 401 || jobLine == 402 || jobLine == 403 ||
+                                                 jobLine == 404 || jobLine == 405 || jobLine == 406 || jobLine >= 501)
+                                            {
+                                                itemValues["Pos"] = innerreader["Bank"].ToString() + "-" + "4";
+                                            }
+
                                             // itemValues 딕셔너리의 Cell 키의 Value 값에 쿼리문에서 가져온 Cell 을 string 형태로 형변환을 거친 후 대입합니다.
                                             itemValues["Cell"] = innerreader["Cell"].ToString();
                                             // 쿼리문 읽기를 종료합니다.
@@ -357,6 +390,7 @@ namespace Press_DB
                                         }
                                         else
                                         {
+                                            // 쿼리문 읽기를 종료합니다.
                                             innerreader.Close();
                                         }
                                     }
@@ -364,6 +398,7 @@ namespace Press_DB
                             }
                             else
                             {
+                                // 쿼리문 읽기를 종료합니다.
                                 reader.Close();
                             }
                         }
@@ -421,11 +456,14 @@ namespace Press_DB
 
                     //// 스테커 상태를 전체 다 읽어온다.
                     ///
-
+                    
+                    // 8번 반복해서 총 8호기 중 가져올 수 있는 셀값을 찾을 for 문.
                     for (int i = 0; i < 8; i++)
                     {
+                        // 마지막 크레인 번호의 값에서 1을 뺀 값을 변수에 저장하고 검사한다.
                         searchValue = searchValue - 1;
 
+                        // 크레인을 계산 할 번호가 0이하일 때 8로 조정한다.
                         if (searchValue <= 0)
                             searchValue = 8;
 
@@ -453,7 +491,7 @@ namespace Press_DB
                                 // t_Cell 의 State 가 'EMPTY' 이고 In_reserve 에 입고 대기 중인 Cell 이 아닌 tc.PLT_CODE, tc.State, tc.Cell 을 찾아옵니다.
                                 query = @"
                                     SELECT TOP 1 tc.Pal_code, tc.State, tc.Cell,tc.Pal_no,tc.Pal_type,tc.Model,tc.Spec, tc.Line,
-                                                tc.Qty,tc.Max_qty,tc.Quality,tc.Prod_date,tc.Prod_time,tc.Prod_time,tc.Pos
+                                                tc.Qty,tc.Max_qty,tc.Quality,tc.Prod_date,tc.Prod_time,tc.Prod_time,tc.Pos,tc.Bank
                                     FROM t_Cell tc
                                     LEFT JOIN t_Out_reserve tr ON tc.Cell = tr.Cell
                                     WHERE 
@@ -464,6 +502,7 @@ namespace Press_DB
                                     ORDER BY tc.Level ASC;
                                     ";
 
+                                // WMS_PLC 의 팔레트 코드번호가 존재하면 string 형태로 code 에 대입한다.
                                 string code = sendItem.Find(pltCode => pltCode.ItemID == "[interface]WMS_PLC.PLT_Code")?.Value.ToString();
 
                                 // SqlCommand 개체를 만들고 쿼리(query)와 연결(connection)을 설정합니다
@@ -483,7 +522,19 @@ namespace Press_DB
                                         {
                                             //////[2024-01-26 수정필요] 만약에 왼쪽 테이블에 Job_Line 에 따라서 Pos 를 입력.
                                             ///
+                                            int jobLine = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Job_Line")?.Value);
 
+                                            // jobLine 이 201 혹은 202 프레스리워크장 번호이거나 301 자동적재PLC 번호이면 Bank 값 뒤에 2번을 붙여서 Pos에 대입하여 위치를 알려준다.
+                                            if (jobLine == 201 || jobLine == 202 || jobLine == 301)
+                                            {
+                                                itemValues["Pos"] = innerreader["Bank"].ToString() + "-" + "2";
+                                            }
+                                            // jobLine 이 401 ~ 406 차체 리워크장 번호이거나 501~ 차체렉방 번호 이면 Bank 값 뒤에 3번을 붙여서 Pos에 대입하여 위치를 알려준다.
+                                            else if (jobLine == 401 || jobLine == 402 || jobLine == 403 ||
+                                                 jobLine == 404 || jobLine == 405 || jobLine == 406 || jobLine >= 501)
+                                            {
+                                                itemValues["Pos"] = innerreader["Bank"].ToString() +"-"+ "3";
+                                            }
                                             // itemValues 딕셔너리 키의 Value 값에 쿼리문에서 가져온 값 을 필요한 형태로 형변환을거친 후 대입합니다.
                                             itemValues["Cell"] = innerreader["Cell"].ToString();
                                             itemValues["Pal_code"] = code;
@@ -495,10 +546,8 @@ namespace Press_DB
                                             itemValues["Line"] = innerreader["Line"].ToString();
                                             itemValues["Qty"] = Convert.ToInt32(innerreader["Qty"]);
                                             itemValues["Max_qty"] = Convert.ToInt32(innerreader["Max_qty"]);
-                                            itemValues["Quality"] = innerreader["Quality"].ToString();
                                             itemValues["Prod_date"] = innerreader["Prod_date"].ToString();
                                             itemValues["Prod_time"] = innerreader["Prod_time"].ToString();
-                                            itemValues["Pos"] = innerreader["Pos"].ToString();
                                             itemValues["Serial_no"] = Convert.ToDouble(innerreader["Serial_no"]);
                                             itemValues["JobType"] = "OUTAUTO";
                                             itemValues["Udate"] = DateTime.Now.ToString("yyyy-MM-dd");
@@ -516,9 +565,6 @@ namespace Press_DB
                             }
                             else
                             {
-                                ////// 재고가 없을 시 NG Code 1 입력.
-                                ////// 제품 정보 이상일 시 Code 2 입력.
-                                ////// 데이터 이상 일 시 [시리얼 넘버 9자리가 아니거나 없거나] Code 3 입력.
                                 reader.Close();
                             }
                         }
@@ -577,8 +623,8 @@ namespace Press_DB
                     /*string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Qty, State, Pal_code, Serial_no, Job_line, Udate, Utime)" +
                                        "VALUES (@JobType , @Cell, @Pal_no, @Qty,  @State, @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";*/
 
-                    string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality,Prod_date, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
-                   "VALUES (@JobType , @Cell, @Pal_no, '', '', '', '', '', @Qty, '', '','', '', @State, '', @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";
+                    string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality,Prod_date, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime,NG_Code)" +
+                   "VALUES (@JobType , @Cell, @Pal_no, '', '', '', '', '', @Qty, '', '','', '', @State, '', @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime,@NG_Code)";
 
                     // SqlCommand 객체 생성 및 쿼리문 설정
                     SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
@@ -632,8 +678,8 @@ namespace Press_DB
 
 
                     // 삽입 쿼리문 정의
-                    string insertQuery = "INSERT INTO t_Out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
-                                       "VALUES (@JobType , @Cell, @PLT_Number, @Pal_type, @Model,'' , @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_time, @State, @Pos, @Pal_code, @Serial_no, @Job_Line, @Udate, @Utime)";
+                    string insertQuery = "INSERT INTO t_Out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime,NG_Code)" +
+                                       "VALUES (@JobType , @Cell, @PLT_Number, @Pal_type, @Model,'' , @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_time, @State, @Pos, @Pal_code, @Serial_no, @Job_Line, @Udate, @Utime,@NG_Code)";
 
                     // SqlCommand 객체 생성 및 쿼리문 설정
                     SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
@@ -698,23 +744,27 @@ namespace Press_DB
                     }
                 }
 
-                //OPCItem writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.WH_Line");
-                //if (writeItem != null)
-                //{
-                //    writeItem.Write(itemValues["WH_Line"].ToString());
-                //}
+                // 각 인터페이스 아이디들이 존재하면 해당 값을 딕셔너리에 저장한 벨류값으로 써준다.
+                OPCItem writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.WH_Line");
+                if (writeItem != null)
+                {
+                    string whLine = itemValues["Pos"].ToString();
 
-                //writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.Request_Check");
-                //if (writeItem != null)
-                //{
-                //    writeItem.Write(itemValues["Request_Check"].ToString());
-                //}
+                    whLine = whLine.Replace("-", "");
+                    writeItem.Write(whLine);
+                }
 
-                //writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.NG Code");
-                //if (writeItem != null)
-                //{
-                //    writeItem.Write(itemValues["NG Code"].ToString());
-                //}
+                writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.Request_Check");
+                if (writeItem != null)
+                {
+                    writeItem.Write(itemValues["Quality"].ToString());
+                }
+
+                writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.NG Code");
+                if (writeItem != null)
+                {
+                    writeItem.Write(itemValues["NG_Code"].ToString());
+                }
 
                 return true;
             }
@@ -778,10 +828,10 @@ namespace Press_DB
                         }
                         sw.WriteLine(); // 각 행의 끝에 줄 바꿈 추가
                     }
-
-                    // 로그 작성이 완료되면 메시지 출력
-                    MessageBox.Show("DataGridView contents saved to log file.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
+
+                // 로그 작성이 완료되면 메시지 출력
+                MessageBox.Show("DataGridView contents saved to log file.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 if (gridClear == true)
                 {
@@ -798,6 +848,11 @@ namespace Press_DB
 
         private bool errorCheck()
         {
+            ////// 재고가 없을 시 NG Code 1 입력.
+            ////// 제품 정보 이상일 시 Code 2 입력.
+            ////// 데이터 이상 일 시 [시리얼 넘버 9자리가 아니거나 없거나] Code 3 입력.
+           
+            // PLC 통신을 통해서 얻은 SerialNo 를 serialValue 값에 string 형태로 대입.
             string serialValue = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Serial_No")?.Value as string;
 
             // 만약 재고가 존재하는 Cell 을 못구했다면.
@@ -805,24 +860,35 @@ namespace Press_DB
             {
                 // Cell 키의 값을 "" 로 해서 딕셔너리 생성.
                 itemValues["Cell"] = "";
-                // Request_Cehck 키의 값을 2번값으로 ng 코드를 넣어줄 딕셔너리 생성.
-                itemValues["Request_Check"] = "2";
+                // Quality 키의 값을 2번값으로 ng 코드를 넣어줄 딕셔너리 생성.
+                itemValues["Quality"] = "2";
                 // NG Code 키의 값을 1번으로 하여 재고없음을 알려줄 딕셔너리 생성.
-                itemValues["NG Code"] = "1";
+                itemValues["NG_Code"] = "1";
 
-                return true;
+                errorMsg = "Stock does not exist.\r\n" + DateTime.Now.ToString();
+                return false;
             }
 
-            else if (!string.IsNullOrEmpty(serialValue) && serialValue.Length != 9)
+            // 시리얼 넘버가 9자리가 아니거나 시리얼 넘버가 없다면.
+            else if (!string.IsNullOrEmpty(serialValue) && serialValue.Length != 9 || string.IsNullOrEmpty(serialValue))
             {
-                // Request_Cehck 키의 값을 2번값으로 ng 코드를 넣어줄 딕셔너리 생성.
-                itemValues["Request_Check"] = "2";
+                // Quality 키의 값을 2번값으로 ng 코드를 넣어줄 딕셔너리 생성.
+                itemValues["Quality"] = "2";
                 // NG Code 키의 값을 1번으로 하여 재고없음을 알려줄 딕셔너리 생성.
-                itemValues["NG Code"] = "2";
+                itemValues["NG_Code"] = "2";
 
-                return true;
+                errorMsg = "The serial number is not normal.\r\n" + DateTime.Now.ToString();
+                return false;
             }
 
+            // 정상적으로 셀값이 구해졌고 데이터에 문제가 없다면.
+            else
+            {
+                // Quality 값에 1번을 써주어 ok 를 나타낸다.
+                itemValues["Quality"] = "1";
+                // NG Code 를 0을 작성하여 에러가 없음을 알린다.
+                itemValues["NG_Code"] = "0";
+            }
             return true;
         }
 
