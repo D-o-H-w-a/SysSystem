@@ -115,9 +115,9 @@ namespace Press_DB
             receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.PLT_Code", 2));
             receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.Parts_Count_In_Pallet", 2));
 
-            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.WH_LINE", 2));
-            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.Request_Check", 2));
-            receiveItem.Add(opcItems.AddItem("[interface]PLC_WMS.NG Code", 2));
+            receiveItem.Add(opcItems.AddItem("[interface]ACS1_WH_01_01.AGV_Call_PLT_Out_Adc", 2)); // WH_LINE
+            receiveItem.Add(opcItems.AddItem("[interface]ACS1_WH_01_01.AGV_Call_PLT_Out_Rework", 2)); //Request_Check
+            receiveItem.Add(opcItems.AddItem("[interface]ACS1_WH_01_01.AGV_Lift_Down_Status", 2)); // NG Code
 
             // 스레드가 실행되고 있는 동안 반복
             while (!cancellationToken.IsCancellationRequested)
@@ -166,18 +166,23 @@ namespace Press_DB
                             opcItem.Write("0");
                         }
                     }
-                    // 만약 opcItem의 ItemID 가 해당 조건문과 같고 아이템의 값이 0이 아닐 때 0으로 써주기. 
-                    if (opcItem.ItemID == "[interface]PLC_WMS.WH_LINE" && opcItem.Value.ToString() != "0")
+
+                    send = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.PLT_In_Out")?.Value;
+                    if (send.ToString() == "0")
                     {
-                        opcItem.Write("0");
-                    }
-                    else if (opcItem.ItemID == "[interface]PLC_WMS.Request_Check" && opcItem.Value.ToString() != "0")
-                    {
-                        opcItem.Write("0");
-                    }
-                    else if (opcItem.ItemID == "[interface]PLC_WMS.NG Code" && opcItem.Value.ToString() != "0")
-                    {
-                        opcItem.Write("0");
+                        // 만약 opcItem의 ItemID 가 해당 조건문과 같고 아이템의 값이 0이 아닐 때 0으로 써주기. 
+                        if (opcItem.ItemID == "[interface]ACS1_WH_01_01.AGV_Call_PLT_Out_Adc" && opcItem.Value.ToString() != "0") // WH_LINE
+                        {
+                            opcItem.Write("0");
+                        }
+                        if (opcItem.ItemID == "[interface]ACS1_WH_01_01.AGV_Call_PLT_Out_Rework" && opcItem.Value.ToString() != "0") //Request_Check
+                        {
+                            opcItem.Write("0");
+                        }
+                        if (opcItem.ItemID == "[interface]ACS1_WH_01_01.AGV_Lift_Down_Status" && opcItem.Value.ToString() != "0") // NG Code
+                        {
+                            opcItem.Write("0");
+                        }
                     }
                 }
 
@@ -202,17 +207,17 @@ namespace Press_DB
                 if (pltINout == 1 && pltInOut.ToString() == "0" && jobLine != 0 && serialNo != 0 && pltNumber != 0 && palletNum != 0 && plt_code != 0)
                 {
                     // 스테커 상태가 만족하면 cell 을 구해서 구해지면 cell 정보 저장하는 함수.
-                    if (sendData())
+                    if (sendData() == 1)
                     {
                         // 데이터에 문제있는지 확인하고 있으면 NG Code 값을 주고 Request_Check 값을 2[ng]로
                         // 없으면 Request_Check 값을 1[ok] 로 줄 함수.
-                        if (errorCheck())
+                        if (errorCheck() == 1)
                         {
                             // sendData 함수에서 가져온 cell 정보를 토대로 왼쪽 테이블 값을 In_reserve 에 데이터 삽입 하기 위한 함수
                             if (Inreserve())
                             {
                                 // 왼쪽 테이블 데이터를 오른쪽에 써주기 위한 함수
-                                if (!sendTalbe())
+                                if (!sendTable())
                                 {
                                     ///실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
                                     // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
@@ -227,13 +232,29 @@ namespace Press_DB
                                 SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                             }
                         }
-                        else
+                        // 에러가 발생 시.
+                        else if (errorCheck() == -1)
                         {
-                            //// errorCheck 에서 데이터 검사 과정 중 문제가 있으면 그리드에 메세지 출력. 로그에 메세지 저장.
-                            ///
-                            // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                            SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                            // 왼쪽 테이블 값을 오른쪽에 써줌.
+                            if (!sendTable())
+                            {
+                                //// 인설트 실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
+                                ///
+                                // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
+                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                            }
+                            else
+                            {
+                                //// errorCheck 에서 데이터 검사 과정 중 문제가 있으면 그리드에 메세지 출력. 로그에 메세지 저장.
+                                ///
+                                // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
+                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                            }
                         }
+                    }
+                    else if (sendData() == -1)
+                    {
+                        continue;
                     }
                     else
                     {
@@ -252,17 +273,17 @@ namespace Press_DB
                 // pltInOut의 0 이고 나머지 값들에 값이 0이 아닌 다른 값이 있을 시 출고 함수 처리
                 else if (pltINout == 2 && pltInOut.ToString() == "0" && jobLine != 0 && serialNo != 0 && pltNumber != 0 && palletNum != 0 && plt_code != 0)
                 {
-                    if (receiveData())
+                    if (receiveData() == 1)
                     {
                         // 데이터에 문제있는지 확인하고 있으면 NG Code 값을 주고 Request_Check 값을 2[ng]로
                         // 없으면 Request_Check 값을 1[ok] 로 줄 함수.
-                        if (errorCheck())
+                        if (errorCheck() == 1)
                         {
                             // 스테커 상태가 만족하면 cell 을 구해서 구해지면 cell 정보 저장하는 함수.
                             if (OutReserve())
                             {
                                 // sendData 함수에서 가져온 cell 정보를 토대로 왼쪽 테이블 값을 In_reserve 에 데이터 삽입 하기 위한 함수
-                                if (!sendTalbe())
+                                if (!sendTable())
                                 {
                                     ///실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
                                     // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
@@ -270,18 +291,32 @@ namespace Press_DB
                                 }
                             }
                         }
+                        // 에러 발생시.
+                        else if (errorCheck() == -1)
+                        {
+                            // 왼쪽 테이블 값을 오른쪽에 써줌.
+                            if (!sendTable())
+                            {
+                                //// 인설트 실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
+                                ///
+                                // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
+                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                            }
+                            else
+                            {
+                                // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
+                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                            }
+                        }
+                        else if (receiveData() == -1)
+                        {
+                            continue;
+                        }
                         else
                         {
-                            //// 인설트 실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
-                            ///
                             // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
                             SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                         }
-                    }
-                    else
-                    {
-                        // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                        SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                     }
                 }
                 //// 2.1 PLT_IN_OUT 이 2번일 때 이고 오른쪽 테이블 값이 존재하지 않을 때
@@ -294,7 +329,7 @@ namespace Press_DB
         }
 
         // OPC 서버 연결 및 데이터 수집 메서드
-        private bool sendData()
+        private int sendData()
         {
             // connectionString 변수에 저장된 데이터베이스 주소를 통해서 연결
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -308,6 +343,9 @@ namespace Press_DB
                     ShowText(1, "DB Connect");
                     //// 스테커 상태를 전체 다 읽어온다.
                     ///
+
+                    // 전체 크레인의 stkState가 1인지 확인하는 플래그
+                    bool allStkStateOne = true;
 
                     for (int i = 0; i < 8; i++)
                     {
@@ -333,6 +371,9 @@ namespace Press_DB
                             // stkState 가 0(정상) 인 조건이 성립 시.
                             if (stkState == 0)
                             {
+                                // 하나라도 Stk_state가 0이면 allStkStateOne 변수값을 false로 설정
+                                allStkStateOne = false;
+
                                 // reader.Close 를 통하여 읽고있는 쿼리문을 닫습니다.
                                 reader.Close();
 
@@ -417,10 +458,18 @@ namespace Press_DB
                     // 데이터 베이스에 접속 종료.
                     connection.Close();
 
+
+                    if (allStkStateOne == true)
+                    {
+                        Thread.Sleep(200);
+                        return -1;
+                    }
+
+
                     // SQL 연결이 종료 되었다면 텍스트를 "DB Disconnect" 로 변경
                     ShowText(1, "DB Disconnect");
                     // 정상적으로 결과를 가져왔다면 return true 를 반환하여 함수를 종료합니다.
-                    return true;
+                    return 1;
                 }
 
                 catch (Exception ex)
@@ -429,7 +478,7 @@ namespace Press_DB
                     ShowText(1, "DB Connect Error");
                     errorMsg = ex.ToString();
                     // false 를 return 시켜 접속이 되지 않았음을 알려줍니다.
-                    return false;
+                    return 2;
                 }
             }
         }
@@ -441,7 +490,7 @@ namespace Press_DB
             StopThread();
         }
 
-        private bool receiveData()
+        private int receiveData()
         {
 
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -454,9 +503,11 @@ namespace Press_DB
                     // SQL 에 정상 연결되었다면 DBstateTxt 의 Text 를 DB Connect 로 변경.
                     ShowText(1, "DB Connect");
 
+                    // 전체 크레인의 stkState가 1인지 확인하는 플래그
+                    bool allStkStateOne = true;
                     //// 스테커 상태를 전체 다 읽어온다.
                     ///
-                    
+
                     // 8번 반복해서 총 8호기 중 가져올 수 있는 셀값을 찾을 for 문.
                     for (int i = 0; i < 8; i++)
                     {
@@ -484,6 +535,9 @@ namespace Press_DB
                             // stkState 가 0(정상) 인 조건이 성립 시.
                             if (stkState == 0)
                             {
+                                // 하나라도 Stk_state가 0이면 allStkStateOne 변수값을 false로 설정
+                                allStkStateOne = false;
+
                                 // reader.Close 를 통하여 읽고있는 쿼리문을 닫습니다.
                                 reader.Close();
 
@@ -576,13 +630,18 @@ namespace Press_DB
                         /// 
                     }
 
+                    if(allStkStateOne == true)
+                    {
+                        return -1;
+                    }
+
                     // 데이터 베이스에 접속 종료.
                     connection.Close();
                     // SQL 연결이 종료 되었다면 텍스트를 "DB Disconnect" 로 변경
                     ShowText(1, "DB Disconnect");
                     
                     // 정상적으로 결과를 가져왔다면 return true 를 반환하여 함수를 종료합니다.
-                    return true;
+                    return 1;
                 }
 
                 catch (Exception ex)
@@ -591,7 +650,7 @@ namespace Press_DB
                     ShowText(1, "DB Connect Error");
                     errorMsg = ex.ToString();
                     // false 를 return 시켜 접속이 되지 않았음을 알려줍니다.
-                    return false;
+                    return 2;
                 }
             }
         }
@@ -675,8 +734,6 @@ namespace Press_DB
                     // SQL 에 정상 연결되었다면 DBstateTxt 의 Text 를 DB Connect 로 변경.
                     ShowText(1, "DB Connect");
 
-
-
                     // 삽입 쿼리문 정의
                     string insertQuery = "INSERT INTO t_Out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime,NG_Code)" +
                                        "VALUES (@JobType , @Cell, @PLT_Number, @Pal_type, @Model,'' , @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_time, @State, @Pos, @Pal_code, @Serial_no, @Job_Line, @Udate, @Utime,@NG_Code)";
@@ -721,7 +778,7 @@ namespace Press_DB
         }
 
         // send 테이블에 읽은 값을 receive 테이블에 써주는 함수.
-        private bool sendTalbe()
+        private bool sendTable()
         {
             try
             {
@@ -745,22 +802,25 @@ namespace Press_DB
                 }
 
                 // 각 인터페이스 아이디들이 존재하면 해당 값을 딕셔너리에 저장한 벨류값으로 써준다.
-                OPCItem writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.WH_Line");
+                OPCItem writeItem = receiveItem.Find(item => item.ItemID == "[interface]ACS1_WH_01_01.AGV_Call_PLT_Out_Adc"); // WH_LINE
                 if (writeItem != null)
                 {
-                    string whLine = itemValues["Pos"].ToString();
+                    if (itemValues.ContainsKey("Pos"))
+                    {
+                        string whLine = itemValues["Pos"].ToString();
 
-                    whLine = whLine.Replace("-", "");
-                    writeItem.Write(whLine);
+                        whLine = whLine.Replace("-", "");
+                        writeItem.Write(whLine);
+                    }
                 }
 
-                writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.Request_Check");
+                writeItem = receiveItem.Find(item => item.ItemID == "[interface]ACS1_WH_01_01.AGV_Call_PLT_Out_Rework"); //Request_Check
                 if (writeItem != null)
                 {
                     writeItem.Write(itemValues["Quality"].ToString());
                 }
 
-                writeItem = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.NG Code");
+                writeItem = receiveItem.Find(item => item.ItemID == "[interface]ACS1_WH_01_01.AGV_Lift_Down_Status"); // NG Code
                 if (writeItem != null)
                 {
                     writeItem.Write(itemValues["NG_Code"].ToString());
@@ -830,9 +890,6 @@ namespace Press_DB
                     }
                 }
 
-                // 로그 작성이 완료되면 메시지 출력
-                MessageBox.Show("DataGridView contents saved to log file.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
                 if (gridClear == true)
                 {
                     // DataGridView의 모든 행을 제거
@@ -846,27 +903,25 @@ namespace Press_DB
             }
         }
 
-        private bool errorCheck()
+        private int errorCheck()
         {
             ////// 재고가 없을 시 NG Code 1 입력.
             ////// 제품 정보 이상일 시 Code 2 입력.
             ////// 데이터 이상 일 시 [시리얼 넘버 9자리가 아니거나 없거나] Code 3 입력.
            
             // PLC 통신을 통해서 얻은 SerialNo 를 serialValue 값에 string 형태로 대입.
-            string serialValue = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Serial_No")?.Value as string;
+            string serialValue = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Serial_No")?.Value.ToString();
 
             // 만약 재고가 존재하는 Cell 을 못구했다면.
             if (!itemValues.ContainsKey("Cell"))
             {
-                // Cell 키의 값을 "" 로 해서 딕셔너리 생성.
-                itemValues["Cell"] = "";
                 // Quality 키의 값을 2번값으로 ng 코드를 넣어줄 딕셔너리 생성.
                 itemValues["Quality"] = "2";
                 // NG Code 키의 값을 1번으로 하여 재고없음을 알려줄 딕셔너리 생성.
                 itemValues["NG_Code"] = "1";
 
                 errorMsg = "Stock does not exist.\r\n" + DateTime.Now.ToString();
-                return false;
+                return -1;
             }
 
             // 시리얼 넘버가 9자리가 아니거나 시리얼 넘버가 없다면.
@@ -878,7 +933,7 @@ namespace Press_DB
                 itemValues["NG_Code"] = "2";
 
                 errorMsg = "The serial number is not normal.\r\n" + DateTime.Now.ToString();
-                return false;
+                return -1;
             }
 
             // 정상적으로 셀값이 구해졌고 데이터에 문제가 없다면.
@@ -889,7 +944,7 @@ namespace Press_DB
                 // NG Code 를 0을 작성하여 에러가 없음을 알린다.
                 itemValues["NG_Code"] = "0";
             }
-            return true;
+            return 1;
         }
 
         // 스레드 종료 메서드
@@ -969,7 +1024,7 @@ namespace Press_DB
                 switch (opcItem.ItemID)
                 {
                     case "[interface]WMS_PLC.PLT_In_Out":
-                        opcItem.Write("1");
+                        opcItem.Write("2");
                         break;
                     case "[interface]WMS_PLC.Job_Line":
                         opcItem.Write("201");
