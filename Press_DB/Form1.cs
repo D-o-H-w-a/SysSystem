@@ -32,10 +32,8 @@ namespace Press_DB
         private Dictionary<string, object> itemValues = new Dictionary<string, object>();
         // 에러 메세지를 담고 있을 변수.
         private string errorMsg;
-        /*
-        // opc item 값을 담아올 List  변수 선언
-        private List<OPCItem> opcItemList = new List<OPCItem>();
-        */
+        // Cell_code 를 key 로 Pal_type 을 값으로 가지고 있을 Dictionary 변수 선언.
+        private Dictionary<string, string> palType = new Dictionary<string, string>();
 
         public Form1()
         {
@@ -83,7 +81,7 @@ namespace Press_DB
                 opcThread = new Thread(() => opcServerJoin(cancellationToken));
                 opcThread.Start();
             }
-
+ 
             catch (Exception ex)
             {
                 // OPC 접속 에러가 날 시 텍스트의 메세지를 PLC Connect Error 로 변경하고 메세지 박스를 통해 에러를 표시합니다.
@@ -118,9 +116,53 @@ namespace Press_DB
             receiveItem.Add(opcItems.AddItem("[interface]ACS1_WH_01_01.AGV_Call_PLT_Out_Adc", 2)); // WH_LINE
             receiveItem.Add(opcItems.AddItem("[interface]ACS1_WH_01_01.AGV_Call_PLT_Out_Rework", 2)); //Request_Check
             receiveItem.Add(opcItems.AddItem("[interface]ACS1_WH_01_01.AGV_Lift_Down_Status", 2)); // NG Code
+            try
+            {
+                // 데이터베이스에 접속하여 Cell_code 와 Pal_type 을 전부 가져옴.
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+                    // SQL 에 정상 연결되었다면 DBstateTxt 의 Text 를 DB Connect 로 변경.
+                    ShowText(1, "DB Connect");
 
-            // 스레드가 실행되고 있는 동안 반복
-            while (!cancellationToken.IsCancellationRequested)
+                    // Stk_no 는 @searchValue 번째 값이며 해당 값의 위치에 존재하는 Stk_state 값을 들고올것임.
+                    string query = "SELECT Cell_code, Pal_type FROM t_Pal_type";
+
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                // 읽은 Cell_code 를 cellCode 에 대입.
+                                string cellCode = reader["Cell_code"].ToString();
+                                // 읽은 Pal_type 을 pal_type 에 대입.
+                                string pal_type = reader["Pal_type"].ToString();
+
+                                // cellCode 를 키로 pal_type 을 변수로 해서 딕셔너리에 저장.
+                                palType[cellCode] = pal_type;
+                            }
+
+                            //쿼리문 종료
+                            reader.Close();
+                        }
+
+                        // 데이터 베이스에 접속 종료.
+                        connection.Close();
+                        // SQL 연결이 종료 되었다면 텍스트를 "DB Disconnect" 로 변경
+                        ShowText(1, "DB Disconnect");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트를 DB Connect Error 로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
+                ShowText(1, "DB Connect Error");
+                errorMsg = ex.ToString();
+            }
+
+                // 스레드가 실행되고 있는 동안 반복
+                while (!cancellationToken.IsCancellationRequested)
             {
                 // plcToPC 있는 각 OPCItem에 대해 읽기를 반복합니다.
                 foreach (OPCItem opcItem in sendItem)
@@ -373,19 +415,17 @@ namespace Press_DB
                             {
                                 // 하나라도 Stk_state가 0이면 allStkStateOne 변수값을 false로 설정
                                 allStkStateOne = false;
-
                                 // reader.Close 를 통하여 읽고있는 쿼리문을 닫습니다.
                                 reader.Close();
 
                                 // t_Cell 의 Level 오름차순을 기준으로 Bank 값이 searchValue x 2 한 값 또는 2를 곱한 후 1을 뺀 값 그리고 PLT_CODE 앞자리 번호가 동일하며
                                 // t_Cell 의 State 가 'EMPTY' 이고 In_reserve 에 입고 대기 중인 Cell 이 아닌 tc.PLT_CODE, tc.State, tc.Cell 을 찾아옵니다.
                                 query = @"
-                                    SELECT TOP 1 tc.Pal_code, tc.State, tc.Cell, tc.Bank
+                                    SELECT tc.State, tc.Cell, tc.Bank, tc.Cell_type
                                     FROM t_Cell tc
                                     LEFT JOIN t_In_reserve tr ON tc.Cell = tr.Cell
                                     WHERE 
                                         (tc.Bank = @searchValue * 2 OR tc.Bank = @searchValue * 2 - 1)
-                                        AND tc.Pal_code = @code
                                         AND tc.State = 'EMPTY'
                                         AND tr.Cell IS NULL
                                     ORDER BY tc.Level ASC;
@@ -393,6 +433,9 @@ namespace Press_DB
 
                                 // OPC 통신을 통해서 Read 하여 가져온 PLT_Code 값을 code 에 스트링형태로 대입. 
                                 string code = sendItem.Find(pltCode => pltCode.ItemID == "[interface]WMS_PLC.PLT_Code")?.Value.ToString();
+                                // PLT_Code 의 앞 두자리 가져오기.
+                                string cell_code = code?.Length >= 2 ? code.Substring(0, 2) : null;
+                                int pal_type = int.Parse(palType[cell_code]);
                                 //char codeFirstChar = code.FirstOrDefault();
 
                                 // SqlCommand 개체를 만들고 쿼리(query)와 연결(connection)을 설정합니다
@@ -406,7 +449,7 @@ namespace Press_DB
                                 using (SqlDataReader innerreader = command.ExecuteReader())
                                 {
                                     // 가져온 결과 값을 읽어옵니다.
-                                    if (innerreader.Read())
+                                    while (innerreader.Read())
                                     {
                                         // 읽어 온 값이 있을 때 접근 합니다.
                                         if (innerreader.FieldCount > 0)
@@ -423,11 +466,26 @@ namespace Press_DB
                                                 itemValues["Pos"] = searchValue + "-" + "4";
                                             }
 
-                                            // itemValues 딕셔너리의 Cell 키의 Value 값에 쿼리문에서 가져온 Cell 을 string 형태로 형변환을 거친 후 대입합니다.
-                                            itemValues["Cell"] = innerreader["Cell"].ToString();
-                                            // 쿼리문 읽기를 종료합니다.
-                                            innerreader.Close();
-                                            break;
+                                            int cellType = int.Parse(reader["Cell_type"].ToString());
+
+                                            if (pal_type == 3730 && pal_type == cellType)
+                                            {
+                                                // itemValues 딕셔너리의 Cell 키의 Value 값에 쿼리문에서 가져온 Cell 을 string 형태로 형변환을 거친 후 대입합니다.
+                                                itemValues["Cell"] = innerreader["Cell"].ToString();
+                                                // 쿼리문 읽기를 종료합니다.
+                                                innerreader.Close();
+                                                i = 8;
+                                                break;
+                                            }
+                                            else if(pal_type != 3730 && cellType >= pal_type)
+                                            {
+                                                // itemValues 딕셔너리의 Cell 키의 Value 값에 쿼리문에서 가져온 Cell 을 string 형태로 형변환을 거친 후 대입합니다.
+                                                itemValues["Cell"] = innerreader["Cell"].ToString();
+                                                // 쿼리문 읽기를 종료합니다.
+                                                innerreader.Close();
+                                                i = 8;
+                                                break;
+                                            }
                                         }
                                         else
                                         {
@@ -460,10 +518,7 @@ namespace Press_DB
 
 
                     if (allStkStateOne == true)
-                    {
-                        Thread.Sleep(200);
                         return -1;
-                    }
 
 
                     // SQL 연결이 종료 되었다면 텍스트를 "DB Disconnect" 로 변경
@@ -631,9 +686,7 @@ namespace Press_DB
                     }
 
                     if(allStkStateOne == true)
-                    {
                         return -1;
-                    }
 
                     // 데이터 베이스에 접속 종료.
                     connection.Close();
