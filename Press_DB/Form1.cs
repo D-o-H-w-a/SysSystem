@@ -3,6 +3,7 @@ using System.Configuration;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Windows.Forms;
+using WinRT;
 using static System.ComponentModel.Design.ObjectSelectorEditor;
 using static System.Windows.Forms.AxHost;
 
@@ -34,6 +35,10 @@ namespace Press_DB
         private string errorMsg;
         // Cell_code 를 key 로 Pal_type 을 값으로 가지고 있을 Dictionary 변수 선언.
         private Dictionary<string, string> palType = new Dictionary<string, string>();
+        // 구해온 CellType 들을 저장할 리스트 변수 선언.
+        private List<string> cellType = new List<string>();
+        // 구해온 cell 번호들을 확인할 리스트 변수 선언.
+        private List<string> cell = new List<string>();
 
         public Form1()
         {
@@ -118,20 +123,21 @@ namespace Press_DB
             receiveItem.Add(opcItems.AddItem("[interface]ACS1_WH_01_01.AGV_Lift_Down_Status", 2)); // NG Code
             try
             {
-                // 데이터베이스에 접속하여 Cell_code 와 Pal_type 을 전부 가져옴.
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
+                    // 데이터베이스 에 접속.
                     connection.Open();
                     // SQL 에 정상 연결되었다면 DBstateTxt 의 Text 를 DB Connect 로 변경.
                     ShowText(1, "DB Connect");
 
-                    // Stk_no 는 @searchValue 번째 값이며 해당 값의 위치에 존재하는 Stk_state 값을 들고올것임.
+                    // t_Pal_type 테이블에 있는 Cell_code 와 Pal_type 을 전부 들고옴.
                     string query = "SELECT Cell_code, Pal_type FROM t_Pal_type";
 
                     using (SqlCommand command = new SqlCommand(query, connection))
                     {
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
+                            // 데이터 읽기 시작.
                             while (reader.Read())
                             {
                                 // 읽은 Cell_code 를 cellCode 에 대입.
@@ -332,6 +338,13 @@ namespace Press_DB
                                     SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                                 }
                             }
+                            else
+                            {
+                                //// 인설트 실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
+                                ///
+                                // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
+                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                            }
                         }
                         // 에러 발생시.
                         else if (errorCheck() == -1)
@@ -388,6 +401,10 @@ namespace Press_DB
 
                     // 전체 크레인의 stkState가 1인지 확인하는 플래그
                     bool allStkStateOne = true;
+                
+                    // cell 과 cellType 이 가진 값들 초기화.
+                    cell.Clear();
+                    cellType.Clear();
 
                     for (int i = 0; i < 8; i++)
                     {
@@ -428,14 +445,20 @@ namespace Press_DB
                                         (tc.Bank = @searchValue * 2 OR tc.Bank = @searchValue * 2 - 1)
                                         AND tc.State = 'EMPTY'
                                         AND tr.Cell IS NULL
-                                    ORDER BY tc.Level ASC;
+                                    ORDER BY tc.Bay ASC, tc.Level ASC;
                                     ";
 
                                 // OPC 통신을 통해서 Read 하여 가져온 PLT_Code 값을 code 에 스트링형태로 대입. 
                                 string code = sendItem.Find(pltCode => pltCode.ItemID == "[interface]WMS_PLC.PLT_Code")?.Value.ToString();
                                 // PLT_Code 의 앞 두자리 가져오기.
                                 string cell_code = code?.Length >= 2 ? code.Substring(0, 2) : null;
-                                int pal_type = int.Parse(palType[cell_code]);
+                                int pal_type = 0;
+                                string pal_typ = "";
+                                if (!string.IsNullOrEmpty(cell_code))
+                                {
+                                    pal_type = int.Parse(palType[cell_code]);
+                                    pal_typ = palType[cell_code];
+                                }
                                 //char codeFirstChar = code.FirstOrDefault();
 
                                 // SqlCommand 개체를 만들고 쿼리(query)와 연결(connection)을 설정합니다
@@ -444,7 +467,6 @@ namespace Press_DB
                                 command.Parameters.AddWithValue("@searchValue", searchValue);
                                 command.Parameters.AddWithValue("@code", code);
                                 //command.Parameters.AddWithValue("@codeFirstChar", codeFirstChar);
-
                                 // 쿼리를 실행하고 SqlDataReader로 결과를 가져옵니다.
                                 using (SqlDataReader innerreader = command.ExecuteReader())
                                 {
@@ -454,43 +476,72 @@ namespace Press_DB
                                         // 읽어 온 값이 있을 때 접근 합니다.
                                         if (innerreader.FieldCount > 0)
                                         {
-                                            int jobLine = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Job_Line")?.Value);
-
-                                            if (jobLine == 201 || jobLine == 202 || jobLine == 301)
+                                            // 읽은 Cell_type 이 Null 이 아니고 값이 존재하면.
+                                            if (!string.IsNullOrEmpty(innerreader["Cell_type"].ToString()))
                                             {
-                                                itemValues["Pos"] = searchValue + "-" + "1";
+                                                // cellType 리스트에 Cell_type 추가.
+                                                cellType.Add(innerreader["Cell_type"].ToString());
+                                                // cell 에 cell 번호 추가.
+                                                cell.Add(innerreader["Cell"].ToString());
                                             }
-                                            else if (jobLine == 401 || jobLine == 402 || jobLine == 403 ||
-                                                 jobLine == 404 || jobLine == 405 || jobLine == 406 || jobLine >= 501)
-                                            {
-                                                itemValues["Pos"] = searchValue + "-" + "4";
-                                            }
+                                        }
+                                    }
+                                    // 쿼리문 읽기를 종료합니다.
+                                    innerreader.Close();
 
-                                            int cellType = int.Parse(reader["Cell_type"].ToString());
+                                    // PLC 통해서 읽어온 잡라인을 대입 int 형태로 대입.
+                                    int jobLine = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Job_Line")?.Value);
 
-                                            if (pal_type == 3730 && pal_type == cellType)
+                                    // JobLine 이 조건에 맞을 떄 구해온 크레인 번호 옆에 + 1을 붙여서 값을 Pos 에 표기.
+                                    if (jobLine == 201 || jobLine == 202 || jobLine == 301)
+                                    {
+                                        itemValues["Pos"] = searchValue + "-" + "1";
+                                    }
+                                    else if (jobLine == 401 || jobLine == 402 || jobLine == 403 ||
+                                         jobLine == 404 || jobLine == 405 || jobLine == 406 || jobLine >= 501)
+                                    {
+                                        itemValues["Pos"] = searchValue + "-" + "4";
+                                    }
+                                    
+                                    // cellType 의 Count 만큼 반복.
+                                    for(int j = 0; j < cellType.Count; j++)
+                                    {
+                                        // value 에 cellType 의 j 번 값을 정수형으로 value에 선언.
+                                        int value = int.Parse(cellType[j]);
+
+                                        // 팔레트 타입이 3730이고 pal_type 과 value 값이 동일 시할 때.
+                                        if (pal_type == 3730 && pal_type == value)
+                                        {
+                                            // itemValues 딕셔너리의 Cell 키의 Value 값에 j 번 째 Cell 을 대입합니다.
+                                            itemValues["Cell"] = cell[j];
+                                            // i 를 8로 값을 줘서 첫 for문을 빠져나가도록 함.
+                                            i = 8;
+                                            // j for 문을 종료.
+                                            break;
+                                        }
+                                        else if (pal_type != 3730 && cellType.Contains(pal_typ) == true && value != 3730)
+                                        {
+                                            if (value == pal_type)
                                             {
-                                                // itemValues 딕셔너리의 Cell 키의 Value 값에 쿼리문에서 가져온 Cell 을 string 형태로 형변환을 거친 후 대입합니다.
-                                                itemValues["Cell"] = innerreader["Cell"].ToString();
-                                                // 쿼리문 읽기를 종료합니다.
-                                                innerreader.Close();
+                                                // itemValues 딕셔너리의 Cell 키의 Value 값에 j 번 째 Cell 을 대입합니다.
+                                                itemValues["Cell"] = cell[j];
+                                                // i 를 8로 값을 줘서 첫 for문을 빠져나가도록 함.
                                                 i = 8;
-                                                break;
-                                            }
-                                            else if(pal_type != 3730 && cellType >= pal_type)
-                                            {
-                                                // itemValues 딕셔너리의 Cell 키의 Value 값에 쿼리문에서 가져온 Cell 을 string 형태로 형변환을 거친 후 대입합니다.
-                                                itemValues["Cell"] = innerreader["Cell"].ToString();
-                                                // 쿼리문 읽기를 종료합니다.
-                                                innerreader.Close();
-                                                i = 8;
+                                                // j for 문을 종료.
                                                 break;
                                             }
                                         }
-                                        else
+                                        else if(pal_type != 3730 && cellType.Contains(pal_typ) == false && value != 3730)
                                         {
-                                            // 쿼리문 읽기를 종료합니다.
-                                            innerreader.Close();
+                                            if(value >= pal_type)
+                                            {
+                                                // itemValues 딕셔너리의 Cell 키의 Value 값에 j 번 째 Cell 을 대입합니다.
+                                                itemValues["Cell"] = cell[j];
+                                                // i 를 8로 값을 줘서 첫 for문을 빠져나가도록 함.
+                                                i = 8;
+                                                // j for 문을 종료.
+                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -600,7 +651,7 @@ namespace Press_DB
                                 // t_Cell 의 State 가 'INCOMP' 이고 In_reserve 에 출고 대기 중인 Cell 이 아닌 데이터들을 찾아옵니다.
                                 query = @"
                                     SELECT TOP 1 tc.Pal_code, tc.State, tc.Cell,tc.Pal_no,tc.Pal_type,tc.Model,tc.Spec, tc.Line,
-                                                tc.Qty,tc.Max_qty,tc.Quality,tc.Prod_time,tc.Prod_time,tc.Pos,tc.Bank
+                                                tc.Qty,tc.Max_qty,tc.Quality,tc.Prod_time,tc.Prod_time,tc.Pos,tc.Bank,tc.Serial_no,tc.Job_line
                                     FROM t_Cell tc
                                     LEFT JOIN t_Out_reserve tr ON tc.Cell = tr.Cell
                                     WHERE 
@@ -736,7 +787,7 @@ namespace Press_DB
                                        "VALUES (@JobType , @Cell, @Pal_no, @Qty,  @State, @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";*/
 
                     string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality,Prod_date, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
-                   "VALUES (@JobType , @Cell, @Pal_no, '', '', '', '', '', @Qty, '', '','', '', @State, '', @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";
+                   "VALUES (@JobType , @Cell, @Pal_no, '', '', '', '', '', @Qty, '', '','', '', @State, @Pos, @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";
 
                     // SqlCommand 객체 생성 및 쿼리문 설정
                     SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
@@ -789,7 +840,7 @@ namespace Press_DB
 
                     // 삽입 쿼리문 정의
                     string insertQuery = "INSERT INTO t_Out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
-                                       "VALUES (@JobType , @Cell, @PLT_Number, @Pal_type, @Model,'' , @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_time, @State, @Pos, @Pal_code, @Serial_no, @Job_Line, @Udate, @Utime)";
+                                       "VALUES (@JobType , @Cell, @Pal_no, @Pal_type, @Model,'' , @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_time, @State, @Pos, @Pal_code, @Serial_no, @Job_Line, @Udate, @Utime)";
 
                     // SqlCommand 객체 생성 및 쿼리문 설정
                     SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
@@ -1092,7 +1143,7 @@ namespace Press_DB
                         opcItem.Write("8");
                         break;
                     case "[interface]WMS_PLC.PLT_Code":
-                        opcItem.Write("1101");
+                        opcItem.Write("2101");
                         break;
                 }
             }
