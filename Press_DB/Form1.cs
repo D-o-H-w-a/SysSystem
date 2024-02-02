@@ -682,8 +682,8 @@ namespace Press_DB
                     /*string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Qty, State, Pal_code, Serial_no, Job_line, Udate, Utime)" +
                                        "VALUES (@JobType , @Cell, @Pal_no, @Qty,  @State, @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";*/
 
-                    string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality,Prod_date, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime,NG_Code)" +
-                   "VALUES (@JobType , @Cell, @Pal_no, '', '', '', '', '', @Qty, '', '','', '', @State, '', @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime,@NG_Code)";
+                    string insertQuery = "INSERT INTO t_In_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality,Prod_date, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
+                   "VALUES (@JobType , @Cell, @Pal_no, '', '', '', '', '', @Qty, '', '','', '', @State, '', @Pal_code, @Serial_No, @Job_Line, @Udate, @Utime)";
 
                     // SqlCommand °´Ã¼ »ý¼º ¹× Äõ¸®¹® ¼³Á¤
                     SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
@@ -735,8 +735,8 @@ namespace Press_DB
                     ShowText(1, "DB Connect");
 
                     // »ðÀÔ Äõ¸®¹® Á¤ÀÇ
-                    string insertQuery = "INSERT INTO t_Out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime,NG_Code)" +
-                                       "VALUES (@JobType , @Cell, @PLT_Number, @Pal_type, @Model,'' , @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_time, @State, @Pos, @Pal_code, @Serial_no, @Job_Line, @Udate, @Utime,@NG_Code)";
+                    string insertQuery = "INSERT INTO t_Out_reserve (JobType ,Cell, Pal_no, Pal_type, Model, Item, Spec, Line, Qty, Max_qty, Quality, Prod_time, State, Pos, Pal_code, Serial_no, Job_line, Udate, Utime)" +
+                                       "VALUES (@JobType , @Cell, @PLT_Number, @Pal_type, @Model,'' , @Spec, @Line, @Qty, @Max_qty, @Quality, @Prod_time, @State, @Pos, @Pal_code, @Serial_no, @Job_Line, @Udate, @Utime)";
 
                     // SqlCommand °´Ã¼ »ý¼º ¹× Äõ¸®¹® ¼³Á¤
                     SqlCommand cmdInsert = new SqlCommand(insertQuery, connection);
