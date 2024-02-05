@@ -167,8 +167,8 @@ namespace Press_DB
                 errorMsg = ex.ToString();
             }
 
-                // 스레드가 실행되고 있는 동안 반복
-                while (!cancellationToken.IsCancellationRequested)
+            // 스레드가 실행되고 있는 동안 반복
+            while (!cancellationToken.IsCancellationRequested)
             {
                 // plcToPC 있는 각 OPCItem에 대해 읽기를 반복합니다.
                 foreach (OPCItem opcItem in sendItem)
@@ -195,41 +195,17 @@ namespace Press_DB
                 }
 
 
-                //// 왼쪽 테이블에 데이터가 존재하지 않을 때 오른쪽 테이블에 데이터가 있을 때 오른쪽 테이블을 지운다.
-                foreach (OPCItem opcItem in receiveItem)
+                //// 왼쪽 테이블에 PLT_In_Out 데이터가 0 일 때 오른쪽 테이블에 데이터가 있으면 오른쪽 테이블을 지운다.
+                object send = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_In_Out")?.Value;
+                if(send.ToString() == "0")
                 {
-                    // 왼쪽 테이블의 opcItem value 값을 object value 에 저장.
-                    object receive = opcItem.Value;
+                    Thread.Sleep(1000);
 
-                    // 왼쪽 테이블의 값을 오른쪽 테이블 ItemID를 이용해서 해당 값을 찾아옴. 오른쪽 테이블 ItemID 가 왼쪽 테이블에는 존재 하지 않는 ItemID 면 null 값을 받아옴.
-                    object send = sendItem.Find(item => item.ItemID.Replace("WMS_PLC", "").Trim() == opcItem.ItemID.Replace("PLC_WMS", "").Trim())?.Value;
-
-                    // value2 값이 null 이 아닐 때.
-                    if (send != null)
+                    for (int i = 0; i < receiveItem.Count; i++)
                     {
-                        // 왼쪽 테이블 value2 의 item 값이 존재하지 않고 오른쪽 테이블 value 의 Item값이 존재할 때. 
-                        if (send.ToString() == "0" && receive.ToString() != send.ToString())
+                        if (receiveItem[i].Value.ToString() != "0")
                         {
-                            // opcItem.Write 를 이용해서 value2 값으로 초기화 시켜준다.
-                            opcItem.Write("0");
-                        }
-                    }
-
-                    send = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.PLT_In_Out")?.Value;
-                    if (send.ToString() == "0")
-                    {
-                        // 만약 opcItem의 ItemID 가 해당 조건문과 같고 아이템의 값이 0이 아닐 때 0으로 써주기. 
-                        if (opcItem.ItemID == "[interface]ACS1_WH_01_01.AGV_Call_PLT_Out_Adc" && opcItem.Value.ToString() != "0") // WH_LINE
-                        {
-                            opcItem.Write("0");
-                        }
-                        if (opcItem.ItemID == "[interface]ACS1_WH_01_01.AGV_Call_PLT_Out_Rework" && opcItem.Value.ToString() != "0") //Request_Check
-                        {
-                            opcItem.Write("0");
-                        }
-                        if (opcItem.ItemID == "[interface]ACS1_WH_01_01.AGV_Lift_Down_Status" && opcItem.Value.ToString() != "0") // NG Code
-                        {
-                            opcItem.Write("0");
+                            receiveItem[i].Write("0");
                         }
                     }
                 }
@@ -239,7 +215,7 @@ namespace Press_DB
                 ///
                 ///// string 형태 pltINout 변수에 opcItemList 에서 PLT_IN_OUT 키의 값을 callNum 에 전달
 
-                object pltInOut = receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.PLT_In_Out").Value;
+                int pltInOut = Convert.ToInt32(receiveItem.Find(item => item.ItemID == "[interface]PLC_WMS.PLT_In_Out").Value);
 
                 // 값이 존재하는지 확인을 하기 위해서 int 형태로 값을 가져올 변수들 생성.
                 int pltINout = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_In_Out")?.Value);
@@ -252,7 +228,7 @@ namespace Press_DB
                 //PLT_IN_OUT 요청 번호를 받을 int 형 변수 callNum
                 // callNum 값이 1 일시 
                 // pltInOut의 0 이고 나머지 값들에 값이 0이 아닌 다른 값이 있을 시 입고 함수 처리
-                if (pltINout == 1 && pltInOut.ToString() == "0" && jobLine != 0 && serialNo != 0 && pltNumber != 0 && palletNum != 0 && plt_code != 0)
+                if (pltINout == 1 && pltInOut == 0 && jobLine != 0 && serialNo != 0 && pltNumber != 0 && palletNum != 0 && plt_code != 0)
                 {
                     // 스테커 상태가 만족하면 cell 을 구해서 구해지면 cell 정보 저장하는 함수.
                     if (sendData() == 1)
@@ -409,7 +385,7 @@ namespace Press_DB
                     for (int i = 0; i < 8; i++)
                     {
                         searchValue = searchValue - 1;
-
+                        
                         if (searchValue <= 0)
                             searchValue = 8;
 
@@ -445,7 +421,7 @@ namespace Press_DB
                                         (tc.Bank = @searchValue * 2 OR tc.Bank = @searchValue * 2 - 1)
                                         AND tc.State = 'EMPTY'
                                         AND tr.Cell IS NULL
-                                    ORDER BY tc.Bay ASC, tc.Level ASC;
+                                    ORDER BY tc.Level ASC;
                                     ";
 
                                 // OPC 통신을 통해서 Read 하여 가져온 PLT_Code 값을 code 에 스트링형태로 대입. 
@@ -492,15 +468,15 @@ namespace Press_DB
                                     // PLC 통해서 읽어온 잡라인을 대입 int 형태로 대입.
                                     int jobLine = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Job_Line")?.Value);
 
-                                    // JobLine 이 조건에 맞을 떄 구해온 크레인 번호 옆에 + 1을 붙여서 값을 Pos 에 표기.
+                                    // JobLine 이 위치에 따른 조건이 맞을 때 구해온 크레인 번호 옆에 + 1 또는 + 4를 붙여서 값을 Pos 에 표기.
                                     if (jobLine == 201 || jobLine == 202 || jobLine == 301)
                                     {
-                                        itemValues["Pos"] = searchValue + "-" + "1";
+                                        itemValues["Pos"] = "P" + searchValue + "-" + "1";
                                     }
                                     else if (jobLine == 401 || jobLine == 402 || jobLine == 403 ||
                                          jobLine == 404 || jobLine == 405 || jobLine == 406 || jobLine >= 501)
                                     {
-                                        itemValues["Pos"] = searchValue + "-" + "4";
+                                        itemValues["Pos"] = "P" + searchValue + "-" + "4";
                                     }
                                     
                                     // cellType 의 Count 만큼 반복.
@@ -566,7 +542,6 @@ namespace Press_DB
 
                     // 데이터 베이스에 접속 종료.
                     connection.Close();
-
 
                     if (allStkStateOne == true)
                         return -1;
@@ -687,13 +662,13 @@ namespace Press_DB
                                             // jobLine 이 201 혹은 202 프레스리워크장 번호이거나 301 자동적재PLC 번호이면 Bank 값 뒤에 2번을 붙여서 Pos에 대입하여 위치를 알려준다.
                                             if (jobLine == 201 || jobLine == 202 || jobLine == 301)
                                             {
-                                                itemValues["Pos"] = searchValue + "-" + "2";
+                                                itemValues["Pos"] = "P" + searchValue + "-" + "2";
                                             }
                                             // jobLine 이 401 ~ 406 차체 리워크장 번호이거나 501~ 차체렉방 번호 이면 Bank 값 뒤에 3번을 붙여서 Pos에 대입하여 위치를 알려준다.
                                             else if (jobLine == 401 || jobLine == 402 || jobLine == 403 ||
                                                  jobLine == 404 || jobLine == 405 || jobLine == 406 || jobLine >= 501)
                                             {
-                                                itemValues["Pos"] = searchValue + "-"+ "3";
+                                                itemValues["Pos"] = "P" + searchValue + "-"+ "3";
                                             }
                                             // itemValues 딕셔너리 키의 Value 값에 쿼리문에서 가져온 값 을 필요한 형태로 형변환을거친 후 대입합니다.
                                             itemValues["Cell"] = innerreader["Cell"].ToString();
@@ -914,6 +889,7 @@ namespace Press_DB
                         string whLine = itemValues["Pos"].ToString();
 
                         whLine = whLine.Replace("-", "");
+                        whLine = whLine.Replace("P", "");
                         writeItem.Write(whLine);
                     }
                 }
@@ -1024,6 +1000,7 @@ namespace Press_DB
                 // NG Code 키의 값을 1번으로 하여 재고없음을 알려줄 딕셔너리 생성.
                 itemValues["NG_Code"] = "1";
 
+                // 재고가 존재하지 않습니다. + 발생 시간을 알려주는 변수.
                 errorMsg = "Stock does not exist.\r\n" + DateTime.Now.ToString();
                 return -1;
             }
@@ -1036,6 +1013,7 @@ namespace Press_DB
                 // NG Code 키의 값을 1번으로 하여 재고없음을 알려줄 딕셔너리 생성.
                 itemValues["NG_Code"] = "2";
 
+                // 일련번호가 정상이 아닙니다. + 발생 시간을 알려주는 변수.
                 errorMsg = "The serial number is not normal.\r\n" + DateTime.Now.ToString();
                 return -1;
             }
@@ -1095,30 +1073,12 @@ namespace Press_DB
 
         private void outBtn_Click(object sender, EventArgs e)
         {
-            foreach (OPCItem opcItem in sendItem)
-            {
-                switch (opcItem.ItemID)
-                {
-                    case "[interface]WMS_PLC.PLT_In_Out":
-                        opcItem.Write("0");
-                        break;
-                    case "[interface]WMS_PLC.Job_Line":
-                        opcItem.Write("0");
-                        break;
-                    case "[interface]WMS_PLC.Serial_No":
-                        opcItem.Write("0");
-                        break;
-                    case "[interface]WMS_PLC.PLT_Number":
-                        opcItem.Write("0");
-                        break;
-                    case "[interface]WMS_PLC.Parts_Count_In_Pallet":
-                        opcItem.Write("0");
-                        break;
-                    case "[interface]WMS_PLC.PLT_Code":
-                        opcItem.Write("0");
-                        break;
-                }
-            }
+            sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_In_Out").Write("0");
+            sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Job_Line").Write("0");
+            sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Serial_No").Write("0");
+            sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_Number").Write("0");
+            sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Parts_Count_In_Pallet").Write("0");
+            sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_Code").Write("0");
         }
 
         private void inBtn_Click(object sender, EventArgs e)
@@ -1128,7 +1088,7 @@ namespace Press_DB
                 switch (opcItem.ItemID)
                 {
                     case "[interface]WMS_PLC.PLT_In_Out":
-                        opcItem.Write("2");
+                        opcItem.Write("1");
                         break;
                     case "[interface]WMS_PLC.Job_Line":
                         opcItem.Write("201");
@@ -1143,7 +1103,7 @@ namespace Press_DB
                         opcItem.Write("8");
                         break;
                     case "[interface]WMS_PLC.PLT_Code":
-                        opcItem.Write("2101");
+                        opcItem.Write("1101");
                         break;
                 }
             }
