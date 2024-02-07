@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using WinRT;
 using static System.ComponentModel.Design.ObjectSelectorEditor;
 using static System.Windows.Forms.AxHost;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace Press_DB
 {
@@ -339,15 +340,15 @@ namespace Press_DB
                                 SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                             }
                         }
-                        else if (receiveData() == -1)
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                            SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
-                        }
+                    }
+                    else if (receiveData() == -1)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
+                        SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                     }
                 }
                 //// 2.1 PLT_IN_OUT 이 2번일 때 이고 오른쪽 테이블 값이 존재하지 않을 때
@@ -367,6 +368,7 @@ namespace Press_DB
             {
                 try
                 {
+                    itemValues.Clear();
                     // 데이터베이스 접속
                     connection.Open();
 
@@ -430,6 +432,7 @@ namespace Press_DB
                                 string cell_code = code?.Length >= 2 ? code.Substring(0, 2) : null;
                                 int pal_type = 0;
                                 string pal_typ = "";
+                                int bank = 0;
                                 if (!string.IsNullOrEmpty(cell_code))
                                 {
                                     pal_type = int.Parse(palType[cell_code]);
@@ -452,6 +455,10 @@ namespace Press_DB
                                         // 읽어 온 값이 있을 때 접근 합니다.
                                         if (innerreader.FieldCount > 0)
                                         {
+                                            if(bank <= 0)
+                                            {
+                                               bank = Convert.ToInt32(innerreader["Bank"].ToString());
+                                            }
                                             // 읽은 Cell_type 이 Null 이 아니고 값이 존재하면.
                                             if (!string.IsNullOrEmpty(innerreader["Cell_type"].ToString()))
                                             {
@@ -471,12 +478,12 @@ namespace Press_DB
                                     // JobLine 이 위치에 따른 조건이 맞을 때 구해온 크레인 번호 옆에 + 1 또는 + 4를 붙여서 값을 Pos 에 표기.
                                     if (jobLine == 201 || jobLine == 202 || jobLine == 301)
                                     {
-                                        itemValues["Pos"] = "P" + searchValue + "-" + "1";
+                                        itemValues["Pos"] = "1" + "-" + bank;
                                     }
                                     else if (jobLine == 401 || jobLine == 402 || jobLine == 403 ||
                                          jobLine == 404 || jobLine == 405 || jobLine == 406 || jobLine >= 501)
                                     {
-                                        itemValues["Pos"] = "P" + searchValue + "-" + "4";
+                                        itemValues["Pos"] = "2" + "-" + bank;
                                     }
                                     
                                     // cellType 의 Count 만큼 반복.
@@ -578,6 +585,7 @@ namespace Press_DB
             {
                 try
                 {
+                    itemValues.Clear();
                     // 데이터베이스 접속
                     connection.Open();
 
@@ -625,8 +633,9 @@ namespace Press_DB
                                 // t_Cell 의 Level 오름차순을 기준으로 Bank 값이 searchValue x 2 한 값 또는 2를 곱한 후 1을 뺀 값 그리고 PLT_CODE 앞자리 번호가 동일하며
                                 // t_Cell 의 State 가 'INCOMP' 이고 In_reserve 에 출고 대기 중인 Cell 이 아닌 데이터들을 찾아옵니다.
                                 query = @"
-                                    SELECT TOP 1 tc.Pal_code, tc.State, tc.Cell,tc.Pal_no,tc.Pal_type,tc.Model,tc.Spec, tc.Line,
-                                                tc.Qty,tc.Max_qty,tc.Quality,tc.Prod_time,tc.Prod_time,tc.Pos,tc.Bank,tc.Serial_no,tc.Job_line
+                                    SELECT TOP 1
+                                            tc.Pal_code, tc.State, tc.Cell,tc.Pal_no,tc.Pal_type,tc.Model,tc.Spec, tc.Line,
+                                            tc.Qty,tc.Max_qty,tc.Quality,tc.Prod_time,tc.Pos,tc.Bank,tc.Serial_no,tc.Job_line
                                     FROM t_Cell tc
                                     LEFT JOIN t_Out_reserve tr ON tc.Cell = tr.Cell
                                     WHERE 
@@ -651,24 +660,24 @@ namespace Press_DB
                                 {
                                     // 가져온 결과 값을 읽어옵니다.
                                     if (innerreader.Read())
-                                    {
+                                    {   
                                         // 읽어 온 값이 있을 때 접근 합니다.
                                         if (innerreader.FieldCount > 0)
                                         {
                                             //////[2024-01-26 수정필요] 만약에 왼쪽 테이블에 Job_Line 에 따라서 Pos 를 입력.
                                             ///
                                             int jobLine = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Job_Line")?.Value);
-
+                                            int bank = Convert.ToInt32(innerreader["Bank"]);
                                             // jobLine 이 201 혹은 202 프레스리워크장 번호이거나 301 자동적재PLC 번호이면 Bank 값 뒤에 2번을 붙여서 Pos에 대입하여 위치를 알려준다.
                                             if (jobLine == 201 || jobLine == 202 || jobLine == 301)
                                             {
-                                                itemValues["Pos"] = "P" + searchValue + "-" + "2";
+                                                itemValues["Pos"] = "1" + "-" + bank;
                                             }
                                             // jobLine 이 401 ~ 406 차체 리워크장 번호이거나 501~ 차체렉방 번호 이면 Bank 값 뒤에 3번을 붙여서 Pos에 대입하여 위치를 알려준다.
                                             else if (jobLine == 401 || jobLine == 402 || jobLine == 403 ||
                                                  jobLine == 404 || jobLine == 405 || jobLine == 406 || jobLine >= 501)
                                             {
-                                                itemValues["Pos"] = "P" + searchValue + "-"+ "3";
+                                                itemValues["Pos"] =  "2" + "-"+ bank;
                                             }
                                             // itemValues 딕셔너리 키의 Value 값에 쿼리문에서 가져온 값 을 필요한 형태로 형변환을거친 후 대입합니다.
                                             itemValues["Cell"] = innerreader["Cell"].ToString();
@@ -889,7 +898,6 @@ namespace Press_DB
                         string whLine = itemValues["Pos"].ToString();
 
                         whLine = whLine.Replace("-", "");
-                        whLine = whLine.Replace("P", "");
                         writeItem.Write(whLine);
                     }
                 }
@@ -1091,7 +1099,7 @@ namespace Press_DB
                         opcItem.Write("1");
                         break;
                     case "[interface]WMS_PLC.Job_Line":
-                        opcItem.Write("201");
+                        opcItem.Write("401");
                         break;
                     case "[interface]WMS_PLC.Serial_No":
                         opcItem.Write("411010001");
