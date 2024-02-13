@@ -29,11 +29,11 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle10 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle7 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle8 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle9 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
             listBox = new GroupBox();
             groupBox = new GroupBox();
             PLCstateTxt = new TextBox();
@@ -136,14 +136,14 @@
             dataGrid.AllowUserToResizeColumns = false;
             dataGrid.AllowUserToResizeRows = false;
             dataGrid.BackgroundColor = Color.FromArgb(191, 205, 218);
-            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle6.BackColor = SystemColors.Control;
-            dataGridViewCellStyle6.Font = new Font("맑은 고딕", 9F);
-            dataGridViewCellStyle6.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle6.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle6.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle6.WrapMode = DataGridViewTriState.True;
-            dataGrid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle1.BackColor = SystemColors.Control;
+            dataGridViewCellStyle1.Font = new Font("맑은 고딕", 9F);
+            dataGridViewCellStyle1.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            dataGrid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             dataGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dataGrid.Columns.AddRange(new DataGridViewColumn[] { error_Msg, error_Date, error_Time });
             dataGrid.Enabled = false;
@@ -153,14 +153,14 @@
             dataGrid.Name = "dataGrid";
             dataGrid.ReadOnly = true;
             dataGrid.RightToLeft = RightToLeft.No;
-            dataGridViewCellStyle10.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            dataGridViewCellStyle10.BackColor = SystemColors.Control;
-            dataGridViewCellStyle10.Font = new Font("맑은 고딕", 9F);
-            dataGridViewCellStyle10.ForeColor = SystemColors.WindowText;
-            dataGridViewCellStyle10.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle10.SelectionForeColor = SystemColors.HighlightText;
-            dataGridViewCellStyle10.WrapMode = DataGridViewTriState.True;
-            dataGrid.RowHeadersDefaultCellStyle = dataGridViewCellStyle10;
+            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            dataGridViewCellStyle5.BackColor = SystemColors.Control;
+            dataGridViewCellStyle5.Font = new Font("맑은 고딕", 9F);
+            dataGridViewCellStyle5.ForeColor = SystemColors.WindowText;
+            dataGridViewCellStyle5.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle5.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle5.WrapMode = DataGridViewTriState.True;
+            dataGrid.RowHeadersDefaultCellStyle = dataGridViewCellStyle5;
             dataGrid.RowHeadersVisible = false;
             dataGrid.RowHeadersWidth = 51;
             dataGrid.Size = new Size(755, 457);
@@ -169,9 +169,9 @@
             // 
             // error_Msg
             // 
-            dataGridViewCellStyle7.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            error_Msg.DefaultCellStyle = dataGridViewCellStyle7;
-            error_Msg.HeaderText = "Error Msg";
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            error_Msg.DefaultCellStyle = dataGridViewCellStyle2;
+            error_Msg.HeaderText = "Message";
             error_Msg.MinimumWidth = 6;
             error_Msg.Name = "error_Msg";
             error_Msg.ReadOnly = true;
@@ -179,8 +179,8 @@
             // 
             // error_Date
             // 
-            dataGridViewCellStyle8.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            error_Date.DefaultCellStyle = dataGridViewCellStyle8;
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            error_Date.DefaultCellStyle = dataGridViewCellStyle3;
             error_Date.HeaderText = "Error Date";
             error_Date.MinimumWidth = 6;
             error_Date.Name = "error_Date";
@@ -189,8 +189,8 @@
             // 
             // error_Time
             // 
-            dataGridViewCellStyle9.Alignment = DataGridViewContentAlignment.MiddleCenter;
-            error_Time.DefaultCellStyle = dataGridViewCellStyle9;
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            error_Time.DefaultCellStyle = dataGridViewCellStyle4;
             error_Time.HeaderText = "Error Time";
             error_Time.MinimumWidth = 6;
             error_Time.Name = "error_Time";
@@ -205,7 +205,7 @@
             Controls.Add(dataGrid);
             Controls.Add(listBox);
             Name = "Form1";
-            Text = "OPCClinet";
+            Text = "PLCClinet";
             listBox.ResumeLayout(false);
             groupBox.ResumeLayout(false);
             groupBox.PerformLayout();

@@ -32,8 +32,8 @@ namespace Press_DB
         private List<OPCItem> receiveItem = new List<OPCItem>();
         // Data 들을 저장할 리스트 형태로 저장할 딕셔너리 변수.
         private Dictionary<string, object> itemValues = new Dictionary<string, object>();
-        // 에러 메세지를 담고 있을 변수.
-        private string errorMsg;
+        // 메세지를 담고 있을 변수.
+        private string message;
         // Cell_code 를 key 로 Pal_type 을 값으로 가지고 있을 Dictionary 변수 선언.
         private Dictionary<string, string> palType = new Dictionary<string, string>();
         // 구해온 CellType 들을 저장할 리스트 변수 선언.
@@ -99,7 +99,7 @@ namespace Press_DB
             {
                 // OPC 접속 에러가 날 시 텍스트의 메세지를 PLC Connect Error 로 변경하고 메세지 박스를 통해 에러를 표시합니다.
                 ShowText(2, "PLC Connect Error");
-                errorMsg = ex.ToString();
+                message = ex.ToString();
             }
         }
 
@@ -131,9 +131,6 @@ namespace Press_DB
             receiveItem.Add(opcItems.AddItem("[interface]ACS1_WH_01_01.AGV_Lift_Down_Status", 2)); // NG Code
             try
             {
-                // SQL 에 정상 연결되었다면 DBstateTxt 의 Text 를 DB Connect 로 변경.
-                ShowText(1, "DB Connect");
-
                 // t_Pal_type 테이블에 있는 Cell_code 와 Pal_type 을 전부 들고옴.
                 string query = "SELECT Cell_code, Pal_type FROM t_Pal_type";
 
@@ -162,7 +159,7 @@ namespace Press_DB
             {
                 // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트를 DB Connect Error 로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
                 ShowText(1, "DB Connect Error");
-                errorMsg = ex.ToString();
+                message = ex.ToString();
             }
 
             // 스레드가 실행되고 있는 동안 반복
@@ -223,22 +220,26 @@ namespace Press_DB
                 // pltInOut의 0 이고 나머지 값들에 값이 0이 아닌 다른 값이 있을 시 입고 함수 처리
                 if (pltINout == 1 && pltInOut == 0)
                 {
+                    int sendDataResult = sendData();
                     // 스테커 상태가 만족하면 cell 을 구해서 구해지면 cell 정보 저장하는 함수.
-                    if (sendData() == 1)
+                    if (sendDataResult == 1)
                     {
+                        int errorCheckResult = errorCheck();
                         // 데이터에 문제있는지 확인하고 있으면 NG Code 값을 주고 Request_Check 값을 2[ng]로
                         // 없으면 Request_Check 값을 1[ok] 로 줄 함수.
-                        if (errorCheck() == 1)
+                        if (errorCheckResult == 1)
                         {
                             // sendData 함수에서 가져온 cell 정보를 토대로 왼쪽 테이블 값을 In_reserve 에 데이터 삽입 하기 위한 함수
                             if (Inreserve())
                             {
+                                // 정상 입고 요청을 처리하였단 것을 위한 함수 호출.
+                                SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                                 // 왼쪽 테이블 데이터를 오른쪽에 써주기 위한 함수
                                 if (!sendTable())
                                 {
                                     ///실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
                                     // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                                    SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                                    SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                                 }
                             }
                             else
@@ -246,11 +247,11 @@ namespace Press_DB
                                 //// 인설트 실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
                                 ///
                                 // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                                SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                             }
                         }
                         // 에러가 발생 시.
-                        else if (errorCheck() == -1)
+                        else if (errorCheckResult == -1)
                         {
                             // 왼쪽 테이블 값을 오른쪽에 써줌.
                             if (!sendTable())
@@ -258,25 +259,25 @@ namespace Press_DB
                                 //// 인설트 실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
                                 ///
                                 // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                                SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                             }
                             else
                             {
                                 //// errorCheck 에서 데이터 검사 과정 중 문제가 있으면 그리드에 메세지 출력. 로그에 메세지 저장.
                                 ///
                                 // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                                SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                             }
                         }
                     }
-                    else if (sendData() == -1)
+                    else if (sendDataResult == -1)
                     {
                         continue;
                     }
                     else
                     {
                         // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                        SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                        SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                     }
                 }
 
@@ -290,21 +291,25 @@ namespace Press_DB
                 // pltInOut의 0 이고 나머지 값들에 값이 0이 아닌 다른 값이 있을 시 출고 함수 처리
                 else if (pltINout == 2 && pltInOut== 0)
                 {
-                    if (receiveData() == 1)
+                    int receiveDataResult = receiveData();
+                    if (receiveDataResult == 1)
                     {
+                        int errorCheckResult = errorCheck();
                         // 데이터에 문제있는지 확인하고 있으면 NG Code 값을 주고 Request_Check 값을 2[ng]로
                         // 없으면 Request_Check 값을 1[ok] 로 줄 함수.
-                        if (errorCheck() == 1)
+                        if (errorCheckResult == 1)
                         {
                             // 스테커 상태가 만족하면 cell 을 구해서 구해지면 cell 정보 저장하는 함수.
                             if (OutReserve())
                             {
+                                // 정상 출고 요청을 처리하였단 것을 알려주기 위한 함수 호출.
+                                SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                                 // sendData 함수에서 가져온 cell 정보를 토대로 왼쪽 테이블 값을 In_reserve 에 데이터 삽입 하기 위한 함수
                                 if (!sendTable())
                                 {
                                     ///실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
                                     // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                                    SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                                    SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                                 }
                             }
                             else
@@ -312,11 +317,11 @@ namespace Press_DB
                                 //// 인설트 실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
                                 ///
                                 // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                                SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                             }
                         }
                         // 에러 발생시.
-                        else if (errorCheck() == -1)
+                        else if (errorCheckResult == -1)
                         {
                             // 왼쪽 테이블 값을 오른쪽에 써줌.
                             if (!sendTable())
@@ -324,23 +329,23 @@ namespace Press_DB
                                 //// 인설트 실패 시 그리드에 메세지 출력. 로그에 메세지 저장.
                                 ///
                                 // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                                SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                             }
                             else
                             {
                                 // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                                SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                                SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                             }
                         }
                     }
-                    else if (receiveData() == -1)
+                    else if (receiveDataResult == -1)
                     {
                         continue;
                     }
                     else
                     {
                         // 에러 메세지, 발생 날짜, 발생 시각을 매게변수 삼아 함수 호출.
-                        SendErrorMsg(errorMsg, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
+                        SendMessage(message, DateTime.Now.ToString("yyyy-MM-dd"), DateTime.Now.ToString("HH:mm:ss"));
                     }
                 }
                 //// 2.1 PLT_IN_OUT 이 2번일 때 이고 오른쪽 테이블 값이 존재하지 않을 때
@@ -359,8 +364,6 @@ namespace Press_DB
             {
                 itemValues.Clear();
 
-                // SQL 에 정상 연결되었다면 DBstateTxt 의 Text 를 DB Connect 로 변경.
-                ShowText(1, "DB Connect");
                 //// 스테커 상태를 전체 다 읽어온다.
                 ///
 
@@ -568,7 +571,7 @@ namespace Press_DB
             {
                 // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트를 DB Connect Error 로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
                 ShowText(1, "DB Connect Error");
-                errorMsg = ex.ToString();
+                message = ex.ToString();
                 // false 를 return 시켜 접속이 되지 않았음을 알려줍니다.
                 return 2;
             }
@@ -757,7 +760,7 @@ namespace Press_DB
             {
                 // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트를 DB Connect Error 로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
                 ShowText(1, "DB Connect Error");
-                errorMsg = ex.ToString();
+                message = ex.ToString();
                 // false 를 return 시켜 접속이 되지 않았음을 알려줍니다.
                 return 2;
             }
@@ -769,9 +772,6 @@ namespace Press_DB
         {
             try
             {
-                // SQL 에 정상 연결되었다면 DBstateTxt 의 Text 를 DB Connect 로 변경.
-                ShowText(1, "DB Connect");
-
                 // 각각의 키 값이 가진 Value 값에 sendItem 에서 item Value 값을 찾아 대입.
                 itemValues["Job_Line"] = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Job_Line")?.Value;
                 itemValues["Serial_No"] = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Serial_No")?.Value;
@@ -809,7 +809,7 @@ namespace Press_DB
                 // 쿼리 실행
                 cmdInsert.ExecuteNonQuery();
 
-
+                message = "Warehousing request completed.";
                 // 정상적으로 데이터를 저장하였다면 return 값을 true 로 반환.
                 return true;
             }
@@ -818,7 +818,7 @@ namespace Press_DB
             {
                 // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트를 DB Connect Error 로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
                 ShowText(1, "DB Connect Error");
-                errorMsg = ex.ToString();
+                message = ex.ToString();
                 // false 를 return 시켜 접속이 되지 않았음을 알려줍니다.
                 return false;
             }
@@ -852,6 +852,7 @@ namespace Press_DB
                 // 쿼리 실행
                 cmdInsert.ExecuteNonQuery();
 
+                message = "Warehousing request completed.";
                 // 정상적으로 데이터를 저장하였다면 return 값을 true 로 반환.
                 return true;
             }
@@ -860,7 +861,7 @@ namespace Press_DB
             {
                 // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트를 DB Connect Error 로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
                 ShowText(1, "DB Connect Error");
-                errorMsg = ex.ToString();
+                message = ex.ToString();
                 // false 를 return 시켜 접속이 되지 않았음을 알려줍니다.
                 return false;
             }
@@ -921,12 +922,12 @@ namespace Press_DB
             {
                 // OPC 접속 에러가 날 시 텍스트의 메세지를 PLC Connect Error 로 변경하고 메세지 박스를 통해 에러를 표시합니다.
                 ShowText(2, "PLC Connect Error");
-                errorMsg = ex.ToString();
+                message = ex.ToString();
                 return false;
             }
         }
 
-        private void SendErrorMsg(string errorMsg, string errorDate, string errorTime)
+        private void SendMessage(string msg, string errorDate, string errorTime)
         {
             // UI 스레드가 아닌 경우, UI 스레드에서 작업하도록 요청
             if (dataGrid.InvokeRequired)
@@ -934,27 +935,27 @@ namespace Press_DB
                 dataGrid.Invoke((MethodInvoker)delegate
                 {
                     // 데이터 그리드에 새로운 행 추가
-                    dataGrid.Rows.Add(errorMsg, errorDate, errorTime);
+                    dataGrid.Rows.Add(msg, errorDate, errorTime);
                 });
             }
             else // UI 스레드인 경우, 직접 작업 수행
             {
                 // 데이터 그리드에 새로운 행 추가
-                dataGrid.Rows.Add(errorMsg, errorDate, errorTime);
+                dataGrid.Rows.Add(msg, errorDate, errorTime);
             }
 
             // 에러메세지 로그 저장 함수호출.
-            ErrorMsgAddLog(false);
+            MessageAddLog(false);
         }
 
         // 그리드에 적힌 에러메세지를 로그로 저장하는 함수.
-        private void ErrorMsgAddLog(bool gridClear)
+        private void MessageAddLog(bool gridClear)
         {
             // 사용자의 문서 폴더 경로를 얻기 위해 Environment 클래스의 GetFolderPath 메서드 사용
             string userDocumentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
             // 현재 날짜를 포함한 로그 파일 이름 생성
-            string logFileName = "ErrorMsg_" + DateTime.Now.ToString("yyyy-MM-dd") + ".txt";
+            string logFileName = "Message_" + DateTime.Now.ToString("yyyy-MM-dd") + ".txt";
 
             // 최종 로그 파일 경로 생성
             string logFilePath = Path.Combine(userDocumentsPath, logFileName);
@@ -1001,6 +1002,9 @@ namespace Press_DB
             string serialValue = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Serial_No")?.Value.ToString();
             string pltNumber = sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.PLT_Number")?.Value.ToString();
             int jobLine = Convert.ToInt32(sendItem.Find(item => item.ItemID == "[interface]WMS_PLC.Job_Line")?.Value);
+            string dateTime = DateTime.Now.ToString();
+            string date = DateTime.Now.ToString("yyyy-MM-dd");
+            string time = DateTime.Now.ToString("HH:mm:ss");
 
             // 만약 재고가 존재하는 Cell 을 못구했다면.
             if (!itemValues.ContainsKey("Cell"))
@@ -1011,11 +1015,13 @@ namespace Press_DB
                     {
                         // Quality 키의 값을 2번값으로 ng 코드를 넣어줄 딕셔너리 생성.
                         itemValues["Quality"] = "2";
-                        // NG Code 키의 값을 3번으로 데이터가 이상하다는 것을 알려줄 딕셔너리 생성.
+                        // NG Code 키의 값을 3번으로 팔레트 번호에 문제가 있는 것을 알려줄 딕셔너리 생성.
                         itemValues["NG_Code"] = "3";
 
-                        // 일련번호가 정상이 아닙니다. + 발생 시간을 알려주는 변수.
-                        errorMsg = "There is something wrong with the pallet number data.\r\n" + DateTime.Now.ToString();
+                        // 팔레트 번호가 없거나 문제가 있음을 알려주는 변수.
+                        message = "There is something wrong with the pallet number data.\r\n";
+                        SendError(date, time);
+                        message = message + dateTime;
                         return -1;
                     }
                 }
@@ -1025,8 +1031,10 @@ namespace Press_DB
                 // NG Code 키의 값을 1번으로 하여 재고없음을 알려줄 딕셔너리 생성.
                 itemValues["NG_Code"] = "1";
 
-                // 재고가 존재하지 않습니다. + 발생 시간을 알려주는 변수.
-                errorMsg = "Stock does not exist.\r\n" + DateTime.Now.ToString();
+                // 재고가 존재하지 않습니다. 라는 메세지를 알려주는 변수.
+                message = "Stock does not exist.\r\n";
+                SendError(date, time);
+                message = message + dateTime;
                 return -1;
             }
 
@@ -1038,8 +1046,9 @@ namespace Press_DB
                 // NG Code 키의 값을 2번으로 제품 정보가 이상하다는 것을 알려줄 딕셔너리 생성.
                 itemValues["NG_Code"] = "2";
 
-                // 일련번호가 정상이 아닙니다. + 발생 시간을 알려주는 변수.
-                errorMsg = "The serial number is not normal.\r\n" + DateTime.Now.ToString();
+                // 일련번호가 정상이 아닙니다. 알려주는 변수.
+                message = "The serial number is not normal.\r\n";
+                message = message + dateTime;
                 return -1;
             }
 
@@ -1132,9 +1141,45 @@ namespace Press_DB
                         opcItem.Write("8");
                         break;
                     case "[interface]WMS_PLC.PLT_Code":
-                        opcItem.Write("1101");
+                        opcItem.Write("2101");
                         break;
                 }
+            }
+        }
+
+        // t_Error 테이블에 값을 넣어줄 함수.
+        private void SendError(string date, string time)
+        {
+            // ng 는 초기값 0으로 설정
+            int ng = 0;
+            try
+            {
+                // t_Error 에 Error_code Err_desc Udate Utime 값을 넣어주는 쿼리문을 작성.
+                string query = "INSERT INTO t_Error (Err_code, Err_desc, Udate, Utime)" +
+                   "VALUES (@NG_Code, @errorMsg, @date, @time)";
+
+                SqlCommand command = new SqlCommand(query, connection);
+
+                // NG_Code 가 Null 혹은 빈값이 아닐 시.
+                if (!string.IsNullOrEmpty(itemValues["NG_Code"].ToString()))
+                {
+                    ng = int.Parse(itemValues["NG_Code"].ToString());
+                }
+                // SqlCommand 개체를 만들고 쿼리(query)와 연결(connection)을 설정합니다
+                command = new SqlCommand(query, connection);
+                // @NG_Code 와 @errorMsg @date @time 매개변수에 값을 할당합니다.
+                command.Parameters.AddWithValue("@NG_Code", ng);
+                command.Parameters.AddWithValue("@errorMsg", message);
+                command.Parameters.AddWithValue("@date", date);
+                command.Parameters.AddWithValue("@time", time);
+                SqlDataReader reader = command.ExecuteReader();
+                reader.Close();
+            }
+            catch (Exception ex)
+            {
+                // SQL 에 접속 하는 중 에러가 발생할 시 SQL 접속 상태 텍스트를 DB Connect Error 로 변경하고 에러메세지를 string 형태로 형변환 후 errorMsg 변수에 대입합니다.
+                ShowText(1, "DB Connect Error");
+                message = ex.ToString();
             }
         }
     }
